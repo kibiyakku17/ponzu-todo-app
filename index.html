@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7FA889">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ぽんずリスト">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>ぽんず Daily Checklist</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1EA;
+  --panel:#FFFFFF;
+  --ink:#30322D;
+  --muted:#888B7E;
+  --soft:#F7F6EF;
+  --line:#E0DDD2;
+  --sage:#7FA889;   --sage-soft:#E4EFE3;
+  --coral:#EFA888;  --coral-soft:#FBE9E0;
+  --sky:#8FBED4;    --sky-soft:#E4F0F4;
+  --lavender:#B6A4D6; --lavender-soft:#EFE8F8;
+  --amber:#E5B65C;  --amber-soft:#FBF1DC;
+  --shadow:0 8px 24px rgba(54,58,48,.07);
+  --shadow-sm:0 3px 10px rgba(54,58,48,.05);
+}
+*{ box-sizing:border-box; }
+html{ color-scheme:light; }
+body{
+  margin:0; min-height:100vh;
+  background:linear-gradient(170deg,#F5F7F0 0%,var(--bg) 50%,#E8EDE4 100%);
+  color:var(--ink);
+  font-family:'Zen Kaku Gothic New','Hiragino Sans','Yu Gothic UI',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,textarea,select{ font:inherit; }
+.app{ width:min(100%,520px); margin:0 auto; padding:18px 16px calc(72px + env(safe-area-inset-bottom)); }
+
+/* ── topbar ── */
+.topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:14px; }
+.eyebrow{ margin:0 0 4px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.18em; font-family:'Zen Maru Gothic',sans-serif; }
+h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-weight:900; line-height:1.25; }
+.subtitle{ margin:6px 0 0; color:var(--muted); font-size:12px; line-height:1.6; }
+
+/* ── 肉球メーター ── */
+.meter{ width:96px; min-width:96px; aspect-ratio:1; position:relative; }
+.puff{
+  position:absolute;
+  border-radius:50%;
+  background:var(--panel);
+  border:2px solid var(--line);
+  transform:translate(-50%,-50%);
+  transition:background .25s ease, border-color .25s ease, transform .25s ease;
+}
+.puff.filled{
+  background:#FBF8F1;
+  border-color:var(--sage);
+  box-shadow:0 0 0 3px var(--sage-soft);
+  transform:translate(-50%,-50%) scale(1.08);
+}
+.meter-core{
+  position:absolute; inset:20px;
+  border-radius:999px;
+  background:var(--panel);
+  display:grid; place-items:center; text-align:center;
+  border:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+}
+.meter-core strong{
+  display:block; font-size:16px;
+  font-family:'Zen Maru Gothic',sans-serif; font-weight:900; line-height:1;
+}
+.meter-core span{ display:block; margin-top:2px; color:var(--muted); font-size:9px; font-weight:700; letter-spacing:.1em; }
+
+/* ── status cards ── */
+.status{ display:grid; gap:10px; margin-bottom:16px; }
+.notice,.trash,.install{
+  border:1px solid var(--line); border-radius:14px;
+  background:var(--panel); padding:12px 14px; box-shadow:var(--shadow-sm);
+}
+.notice{ display:flex; justify-content:space-between; gap:12px; align-items:center; color:var(--muted); font-size:13px; }
+.notice strong{ color:var(--ink); font-size:14px; font-family:'Zen Maru Gothic',sans-serif; }
+.trash{ display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center; }
+.trash-mark{ width:36px; height:36px; border-radius:999px; display:grid; place-items:center; color:#fff; font-size:11px; font-weight:800; background:var(--sage); }
+.trash.coral{ background:var(--coral-soft); } .trash.coral .trash-mark{ background:var(--coral); }
+.trash.sky{ background:var(--sky-soft); }     .trash.sky .trash-mark{ background:var(--sky); }
+.trash.sage{ background:var(--sage-soft); }   .trash.sage .trash-mark{ background:var(--sage); }
+.trash.amber{ background:var(--amber-soft); } .trash.amber .trash-mark{ background:var(--amber); }
+.trash.none .trash-mark{ background:#B0B3A6; }
+.trash strong{ display:block; font-size:14px; font-family:'Zen Maru Gothic',sans-serif; }
+.trash span{ display:block; margin-top:2px; color:var(--muted); font-size:12px; }
+.install{ display:none; align-items:center; justify-content:space-between; gap:12px; }
+.install.is-visible{ display:flex; }
+.install span{ color:var(--muted); font-size:12px; }
+
+/* ── controls ── */
+.controls{
+  position:sticky; top:0; z-index:4;
+  display:grid; grid-template-columns:1fr auto auto auto;
+  gap:8px; padding:8px 0 12px;
+  background:linear-gradient(180deg,rgba(238,241,234,.97),rgba(238,241,234,.82));
+  backdrop-filter:blur(10px);
+}
+.tabs{ display:grid; grid-template-columns:repeat(3,1fr); gap:4px; padding:4px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.75); }
+.tab,.icon-btn,.text-btn{ border:0; border-radius:9px; min-height:38px; cursor:pointer; }
+.tab{ background:transparent; color:var(--muted); font-size:13px; font-weight:700; transition:background .15s,color .15s; }
+.tab[aria-selected="true"]{ background:var(--sage); color:#fff; }
+.icon-btn,.text-btn{ background:var(--panel); border:1px solid var(--line); color:var(--ink); box-shadow:var(--shadow-sm); }
+.icon-btn{ width:40px; display:grid; place-items:center; font-weight:900; font-size:16px; }
+.text-btn{ padding:0 12px; font-size:13px; font-weight:700; }
+.add-btn{ background:var(--sage); color:#fff; border:none; border-radius:9px; min-height:38px; width:40px; display:grid; place-items:center; font-size:18px; cursor:pointer; box-shadow:var(--shadow-sm); }
+
+/* ── time group ── */
+.time-label{
+  margin:22px 0 8px; display:flex; align-items:center; gap:10px;
+  color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.1em;
+  font-family:'Zen Maru Gothic',sans-serif;
+}
+.time-label::after{ content:""; height:1px; flex:1; background:var(--line); }
+.group-label{
+  margin:22px 4px 9px; display:flex; align-items:center; gap:10px;
+  color:var(--muted); font-size:12px; font-weight:800; letter-spacing:.05em;
+  font-family:'Zen Maru Gothic',sans-serif;
+}
+.group-label::after{ content:""; height:1px; flex:1; background:var(--line); }
+
+/* ── section card（週・月用）── */
+.section{
+  margin-bottom:10px; padding:13px 13px 6px;
+  background:var(--panel); border:1px solid var(--line);
+  border-left:5px solid var(--accent); border-radius:14px; box-shadow:var(--shadow-sm);
+}
+.section-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:5px; }
+.section h2{ margin:0; font-size:15px; font-family:'Zen Maru Gothic',sans-serif; font-weight:700; }
+.count{ white-space:nowrap; color:var(--muted); font-size:12px; font-weight:700; }
+
+/* ── task row ── */
+.task{
+  display:grid; grid-template-columns:28px 1fr auto;
+  gap:8px; align-items:start; padding:9px 0;
+  border-top:1px solid var(--line);
+}
+.task:first-of-type{ border-top:0; }
+.task input[type="checkbox"]{ position:absolute; opacity:0; pointer-events:none; }
+.box{
+  width:24px; height:24px; margin-top:1px;
+  border:2px solid var(--accent,var(--sage));
+  border-radius:999px; display:grid; place-items:center; cursor:pointer; transition:background .15s;
+}
+.box::after{ content:""; width:10px; height:10px; border-radius:999px; background:transparent; }
+.task input:focus-visible + .box{ outline:3px solid rgba(127,168,137,.3); outline-offset:2px; }
+.task input:checked + .box{ background:var(--accent,var(--sage)); }
+.task input:checked + .box::after{ background:#fff; }
+.task label.txt{ min-width:0; cursor:pointer; font-size:14px; line-height:1.55; }
+.task input:checked ~ .txt .main{ color:var(--muted); text-decoration:line-through; }
+.note{ display:block; margin-top:2px; color:var(--muted); font-size:12px; }
+.edit-btn{
+  align-self:center; background:none; border:none; cursor:pointer;
+  color:var(--muted); font-size:15px; padding:4px; border-radius:6px; line-height:1;
+  opacity:0; transition:opacity .15s;
+}
+.task:hover .edit-btn, .task:focus-within .edit-btn{ opacity:1; }
+
+/* ── モーダル共通 ── */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(48,50,45,.42);
+  backdrop-filter:blur(4px); z-index:100;
+  display:flex; align-items:flex-end; padding:0;
+}
+.modal-overlay.hidden{ display:none; }
+.modal{
+  background:var(--panel); border-radius:20px 20px 0 0;
+  padding:20px 18px calc(28px + env(safe-area-inset-bottom));
+  width:100%; max-width:520px; margin:0 auto;
+  box-shadow:0 -8px 32px rgba(48,50,45,.12);
+  display:flex; flex-direction:column; gap:14px;
+}
+.modal h3{ margin:0; font-family:'Zen Maru Gothic',sans-serif; font-size:16px; font-weight:900; }
+.modal-field label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:4px; }
+.modal-field input[type="text"],
+.modal-field textarea,
+.modal-field select{
+  width:100%; border:1px solid var(--line); border-radius:10px;
+  padding:10px 12px; font-size:14px; background:var(--soft); color:var(--ink);
+  outline:none; resize:none; transition:border-color .15s;
+}
+.modal-field input:focus,.modal-field textarea:focus,.modal-field select:focus{ border-color:var(--sage); }
+.modal-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.modal-actions.has-delete{ grid-template-columns:auto 1fr 1fr; }
+.modal-btn{ border:none; border-radius:12px; padding:12px; font-size:14px; font-weight:700; cursor:pointer; }
+.modal-btn.cancel{ background:var(--soft); color:var(--muted); }
+.modal-btn.save{ background:var(--sage); color:#fff; }
+.modal-btn.save:hover{ background:#6a9472; }
+.modal-btn.delete{ background:var(--coral-soft); color:var(--coral); }
+.modal-btn.delete:hover{ background:#f5d4c4; }
+
+.empty{ margin:20px 0; padding:28px 16px; border:1px dashed var(--line); border-radius:14px; color:var(--muted); text-align:center; background:rgba(255,255,255,.5); font-size:14px; }
+.footer{ margin-top:22px; color:var(--muted); text-align:center; font-size:11px; line-height:1.7; }
+.hidden{ display:none !important; }
+
+@media (max-width:380px){
+  .app{ padding-inline:12px; }
+  h1{ font-size:21px; }
+  .meter{ width:84px; min-width:84px; }
+  .controls{ grid-template-columns:1fr auto auto; }
+  .controls .text-btn{ grid-column:1/-1; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">TODAY'S LIST</p>
+      <h1 id="dateDisplay">今日のチェック</h1>
+      <p class="subtitle" id="subtitle">毎日のことを、少しずつ。</p>
+    </div>
+    <div class="meter" id="meterWrap" aria-label="今日の進み具合">
+      <div class="meter-core">
+        <strong id="progressPct">0%</strong>
+        <span>🐾</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="status">
+    <div class="notice" aria-live="polite">
+      <div>
+        <strong id="moodLine">準備できました</strong><br>
+        <span>日付が変わると自動で今日のリストに切り替わります。</span>
+      </div>
+      <button class="icon-btn" id="refreshToday" type="button" title="今日に更新">↻</button>
+    </div>
+    <div class="trash" id="trashBanner"></div>
+    <div class="install" id="installPanel">
+      <div><strong>ホーム画面に追加できます</strong><br><span>端末がインストールに対応しています。</span></div>
+      <button class="text-btn" id="installButton" type="button">追加</button>
+    </div>
+  </div>
+
+  <div class="controls" aria-label="表示切り替え">
+    <div class="tabs" role="tablist">
+      <button class="tab" type="button" role="tab" aria-selected="true" data-view="daily">毎日</button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-view="weekly">週</button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-view="monthly">月</button>
+    </div>
+    <button class="add-btn" id="addTodo" type="button" title="Todoを追加">＋</button>
+    <button class="icon-btn" id="hideDone" type="button" title="完了済みを隠す">−</button>
+    <button class="text-btn" id="resetVisible" type="button">リセット</button>
+  </div>
+
+  <main id="content"></main>
+  <footer class="footer">チェック状態はこの端末の中だけに保存されます。</footer>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal-overlay hidden" id="editOverlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3 id="editTitle">✏️ Todoを編集</h3>
+    <div class="modal-field">
+      <label for="editMain">内容</label>
+      <input type="text" id="editMain" maxlength="80">
+    </div>
+    <div class="modal-field">
+      <label for="editNote">メモ（省略可）</label>
+      <textarea id="editNote" rows="2" maxlength="120"></textarea>
+    </div>
+    <div class="modal-field">
+      <label for="editTime">時間帯</label>
+      <select id="editTime">
+        <option value="morning">🌅 朝</option>
+        <option value="lunch">☀️ 昼休み</option>
+        <option value="work">💻 仕事中</option>
+        <option value="evening">🌇 仕事終わり</option>
+        <option value="anytime">🕐 時間未設定</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label for="editCategory">カテゴリ</label>
+      <select id="editCategory">
+        <option value="ponzu">ぽんず 🐶</option>
+        <option value="home">家事 🏠</option>
+        <option value="health">健康 💪</option>
+        <option value="work">仕事 💻</option>
+        <option value="self">セルフケア ✨</option>
+      </select>
+    </div>
+    <div class="modal-actions has-delete" id="editActions">
+      <button class="modal-btn delete" id="editDelete">削除</button>
+      <button class="modal-btn cancel" id="editCancel">キャンセル</button>
+      <button class="modal-btn save" id="editSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================================================
+   カテゴリ定義
+   =================================================== */
+const CATEGORIES = {
+  ponzu:  { title:"ぽんず 🐶",    accent:"var(--sage)"    },
+  home:   { title:"家事 🏠",      accent:"var(--lavender)" },
+  health: { title:"健康 💪",      accent:"var(--coral)"   },
+  work:   { title:"仕事 💻",      accent:"var(--sky)"     },
+  self:   { title:"セルフケア ✨", accent:"var(--lavender)" },
+};
+const CAT_ORDER = ["ponzu","home","health","work","self"];
+
+const TIME_LABELS = {
+  morning:"🌅 朝", lunch:"☀️ 昼休み",
+  work:"💻 仕事中", evening:"🌇 仕事終わり", anytime:"🕐 時間未設定"
+};
+const TIME_ORDER = ["morning","lunch","work","evening","anytime"];
+
+/* ===================================================
+   デフォルトデータ
+   =================================================== */
+const DEFAULT_DAILY = [
+  { key:"ponzu", items:[
+    { id:"p1", main:"散歩",                    time:"morning" },
+    { id:"p2", main:"ごはん 朝",               time:"morning" },
+    { id:"p3", main:"ごはん 夜",               time:"evening" },
+    { id:"p4", main:"お水チェック・交換",       time:"anytime" },
+    { id:"p5", main:"トイレシート確認",         time:"anytime" },
+    { id:"p6", main:"ブラッシング",             time:"evening" },
+    { id:"p7", main:"歯みがき",                time:"evening" },
+    { id:"p8", main:"スキンシップ・体調チェック", note:"耳、目、皮膚、おなかの様子を見る", time:"evening" }
+  ]},
+  { key:"home", items:[
+    { id:"k1", main:"食器洗い",               time:"morning" },
+    { id:"k2", main:"部屋の簡単な片づけ 5分", time:"anytime" }
+  ]},
+  { key:"health", items:[
+    { id:"h1", main:"食事",       time:"anytime" },
+    { id:"h2", main:"プロテイン", time:"morning" },
+    { id:"h3", main:"サプリ",     time:"morning" },
+    { id:"h4", main:"水分補給",   time:"anytime" }
+  ]},
+  { key:"work", items:[
+    { id:"w1", main:"今日の予定確認",      time:"morning" },
+    { id:"w2", main:"メール・チャット確認", time:"morning" }
+  ]},
+  { key:"self", items:[
+    { id:"s1", main:"朝の伸び・深呼吸 1分でOK",       time:"morning" },
+    { id:"s2", main:"鏡を見て「お疲れさま」のひとこと", time:"evening" },
+    { id:"s3", main:"お風呂で少しリラックス",           time:"evening" }
+  ]}
+];
+
+const weeklyData = [
+  { key:"w_ponzu", title:"ぽんず 🐶（週1）", accent:"var(--sage)", items:[
+    { id:"wp1", main:"トイレまわりのしっかり掃除" },
+    { id:"wp2", main:"食器洗浄・ぬめり対策" },
+    { id:"wp3", main:"ベッドや布類の洗濯" },
+    { id:"wp4", main:"爪の長さ確認" },
+    { id:"wp5", main:"歯・歯ぐきの様子確認" }
+  ]},
+  { key:"w_home", title:"家事 🏠（週1）", accent:"var(--lavender)", items:[
+    { id:"wk1", main:"掃除機" },
+    { id:"wk2", main:"コロコロ" },
+    { id:"wk3", main:"お風呂掃除" },
+    { id:"wk4", main:"トイレ掃除" },
+    { id:"wk5", main:"冷蔵庫の在庫確認" },
+    { id:"wk6", main:"買い出し" }
+  ]},
+  { key:"w_self", title:"セルフケア ✨（週1）", accent:"var(--coral)", items:[
+    { id:"ws1", main:"ゆっくりお風呂タイム" },
+    { id:"ws2", main:"角質ケア・パック" },
+    { id:"ws3", main:"推し活タイム確保" },
+    { id:"ws4", main:"髪や爪のメンテナンス" }
+  ]}
+];
+
+const monthlyData = [
+  { key:"m_ponzu", title:"ぽんず 🐶（月1）", accent:"var(--sage)", items:[
+    { id:"mp1", main:"トリミング予約確認", note:"必要な月は早めに確認" },
+    { id:"mp2", main:"フィラリア・ノミダニ予防薬" },
+    { id:"mp3", main:"フード残量確認" },
+    { id:"mp4", main:"トイレシート在庫確認" },
+    { id:"mp5", main:"おやつ在庫確認" },
+    { id:"mp6", main:"ブラシやケア用品の点検" }
+  ]},
+  { key:"m_home", title:"家事 🏠（月1）", accent:"var(--lavender)", items:[
+    { id:"mk1", main:"シーツ交換" },
+    { id:"mk2", main:"エアコンフィルター確認" },
+    { id:"mk3", main:"排水口のしっかり掃除" },
+    { id:"mk4", main:"家計簿・支出確認" }
+  ]}
+];
+
+// ごみ出し（水曜=段ボール・古紙・服）
+const trashSchedule = {
+  0: null,
+  1: { label:"燃やすごみ",              mark:"可燃", cls:"coral" },
+  2: { label:"缶・びん・ペットボトル",   mark:"資源", cls:"sky"   },
+  3: { label:"段ボール・古紙・服",       mark:"古紙", cls:"amber" },
+  4: { label:"プラスチック資源",          mark:"プラ", cls:"sage"  },
+  5: { label:"燃やすごみ",              mark:"可燃", cls:"coral" },
+  6: null
+};
+
+/* ===================================================
+   カスタムデータ保存
+   =================================================== */
+function loadDailyData(){
+  try{
+    const s = localStorage.getItem("todo_custom_daily");
+    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT_DAILY));
+  }catch{ return JSON.parse(JSON.stringify(DEFAULT_DAILY)); }
+}
+function saveDailyData(){ localStorage.setItem("todo_custom_daily", JSON.stringify(dailyData)); }
+let dailyData = loadDailyData();
+
+function genId(){
+  return "u" + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+}
+
+/* ===================================================
+   ストレージ
+   =================================================== */
+const storage = {
+  get(key){ try{ return JSON.parse(localStorage.getItem(key)||"{}"); }catch{ return {}; } },
+  set(key,v){ localStorage.setItem(key, JSON.stringify(v)); }
+};
+
+/* ===================================================
+   日付
+   =================================================== */
+const pad = n => String(n).padStart(2,"0");
+const dowLabels = ["日","月","火","水","木","金","土"];
+
+function getToday(){
+  const p = new URLSearchParams(location.search).get("date");
+  const now = p ? new Date(`${p}T12:00:00`) : new Date();
+  return {
+    date:now, y:now.getFullYear(), m:now.getMonth()+1, d:now.getDate(), dow:now.getDay(),
+    dateKey:`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`,
+    monthKey:`${now.getFullYear()}-${pad(now.getMonth()+1)}`
+  };
+}
+function stateKey(v){
+  const t=getToday();
+  if(v==="daily") return `daily_${t.dateKey}`;
+  if(v==="weekly") return `weekly_${t.y}-W${getWeekNumber(t.date)}`;
+  return `monthly_${t.monthKey}`;
+}
+function isSaturday(){ return getToday().dow===6; }
+function isFirstSaturday(){ const t=getToday(); return t.dow===6&&t.d<=7; }
+function getWeekNumber(date){
+  const c=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  const d=c.getUTCDay()||7;
+  c.setUTCDate(c.getUTCDate()+4-d);
+  const y=new Date(Date.UTC(c.getUTCFullYear(),0,1));
+  return Math.ceil((((c-y)/86400000)+1)/7);
+}
+
+/* ===================================================
+   肉球メーター
+   =================================================== */
+const PUFF_N = 14;
+let puffsBuilt = false;
+function buildPuffs(){
+  if (puffsBuilt) return;
+  const wrap = document.getElementById("meterWrap");
+  for (let i=0;i<PUFF_N;i++){
+    const angle = (i/PUFF_N)*2*Math.PI - Math.PI/2;
+    const r = 40;
+    const x = 50 + r*Math.cos(angle);
+    const y = 50 + r*Math.sin(angle);
+    const p = document.createElement("div");
+    p.className = "puff";
+    p.dataset.index = i;
+    const puffR = 9;
+    p.style.cssText = `left:${x}%;top:${y}%;width:${puffR*2}px;height:${puffR*2}px;`;
+    wrap.insertBefore(p, wrap.querySelector(".meter-core"));
+  }
+  puffsBuilt = true;
+}
+function updateMeter(pct){
+  const filled = Math.round((pct/100)*PUFF_N);
+  document.querySelectorAll(".puff").forEach(p => {
+    p.classList.toggle("filled", Number(p.dataset.index) < filled);
+  });
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+/* ===================================================
+   アプリ状態
+   =================================================== */
+const appState = { view:"daily", hideDone:false, todayKey:"", installPrompt:null };
+
+/* ===================================================
+   レンダリング
+   =================================================== */
+function updateDateHeader(){
+  const t=getToday(); appState.todayKey=t.dateKey;
+  document.getElementById("dateDisplay").textContent = `${t.m}月${t.d}日（${dowLabels[t.dow]}）`;
+  const sub = isSaturday() ? "今日は週1タスクも表示されます。" + (isFirstSaturday()?" 月1タスクも！":"") : "毎日のことを、少しずつ。";
+  document.getElementById("subtitle").textContent = sub;
+}
+
+function renderTrash(){
+  const t=getToday(); const el=document.getElementById("trashBanner");
+  const info=trashSchedule[t.dow];
+  if(!info){
+    el.className="trash none";
+    el.innerHTML=`<div class="trash-mark">なし</div><div><strong>今日のごみ出しはありません</strong><span>次の回収日にまとめて確認しましょう。</span></div>`;
+    return;
+  }
+  el.className=`trash ${info.cls}`;
+  el.innerHTML=`<div class="trash-mark">${info.mark}</div><div><strong>今日のごみ出し：${info.label}</strong><span>朝8時までに出しましょう。</span></div>`;
+}
+
+/* 毎日タブ：時間帯×カテゴリで色分け */
+function buildDailyContent(state, stKey){
+  // 全アイテムを時間帯ごとに収集
+  const buckets = {};
+  TIME_ORDER.forEach(t => { buckets[t]=[]; });
+
+  dailyData.forEach(sec => {
+    const cat = CATEGORIES[sec.key] || CATEGORIES.self;
+    sec.items.forEach(item => {
+      const time = item.time || "anytime";
+      buckets[time].push({ ...item, accent:cat.accent, catKey:sec.key });
+    });
+  });
+
+  let html = "";
+  TIME_ORDER.forEach(time => {
+    let items = buckets[time];
+    if (!items.length) return;
+    if (appState.hideDone) items = items.filter(it => !state[it.id]);
+    if (!items.length) return;
+
+    html += `<div class="time-label">${TIME_LABELS[time]}</div>`;
+    items.forEach(item => {
+      const checked = state[item.id] ? "checked" : "";
+      html += `
+        <div class="task" data-task="${item.id}" style="--accent:${item.accent}">
+          <input type="checkbox" id="${item.id}" data-id="${item.id}" data-state-key="${stKey}" ${checked}>
+          <label class="box" for="${item.id}" aria-hidden="true"></label>
+          <label class="txt" for="${item.id}">
+            <span class="main">${item.main}</span>
+            ${item.note ? `<span class="note">${item.note}</span>` : ""}
+          </label>
+          <button class="edit-btn" data-edit-id="${item.id}" title="編集" aria-label="${item.main}を編集">✏️</button>
+        </div>`;
+    });
+  });
+  return html || `<div class="empty">全て完了！今日もお疲れさまでした🐾</div>`;
+}
+
+function buildSection(sec, state, groupKey){
+  const done = sec.items.filter(i => state[i.id]).length;
+  const rows = sec.items.map(item => {
+    if (appState.hideDone && state[item.id]) return "";
+    const checked = state[item.id] ? "checked" : "";
+    return `
+      <div class="task" data-task="${item.id}">
+        <input type="checkbox" id="${item.id}" data-id="${item.id}" data-state-key="${groupKey}" ${checked}>
+        <label class="box" for="${item.id}" aria-hidden="true"></label>
+        <label class="txt" for="${item.id}">
+          <span class="main">${item.main}</span>
+          ${item.note ? `<span class="note">${item.note}</span>` : ""}
+        </label>
+        <span></span>
+      </div>`;
+  }).join("");
+  return `
+    <section class="section" style="--accent:${sec.accent}" data-section="${sec.key}">
+      <div class="section-head"><h2>${sec.title}</h2><span class="count">${done} / ${sec.items.length}</span></div>
+      ${rows}
+    </section>`;
+}
+
+function render(){
+  buildPuffs();
+  updateDateHeader();
+  renderTrash();
+  const content = document.getElementById("content");
+
+  if (appState.view==="daily"){
+    const key=stateKey("daily"); const state=storage.get(key);
+    let html = buildDailyContent(state, key);
+    if (isSaturday()){
+      const wk=stateKey("weekly"); const ws=storage.get(wk);
+      html += `<div class="group-label">🎀 週1タスク</div>`+weeklyData.map(s=>buildSection(s,ws,wk)).join("");
+    }
+    if (isFirstSaturday()){
+      const mk=stateKey("monthly"); const ms=storage.get(mk);
+      html += `<div class="group-label">🌙 月1タスク</div>`+monthlyData.map(s=>buildSection(s,ms,mk)).join("");
+    }
+    content.innerHTML = html;
+  } else if (appState.view==="weekly"){
+    const key=stateKey("weekly"); const state=storage.get(key);
+    content.innerHTML = weeklyData.map(s=>buildSection(s,state,key)).join("");
+  } else {
+    const key=stateKey("monthly"); const state=storage.get(key);
+    content.innerHTML = monthlyData.map(s=>buildSection(s,state,key)).join("");
+  }
+
+  content.querySelectorAll("input[type='checkbox']").forEach(input => {
+    input.addEventListener("change", () => {
+      const next=storage.get(input.dataset.stateKey);
+      next[input.dataset.id]=input.checked;
+      storage.set(input.dataset.stateKey, next);
+      updateProgress();
+      if (appState.hideDone) render();
+    });
+  });
+
+  content.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", e => { e.preventDefault(); openEditModal(btn.dataset.editId); });
+  });
+
+  updateProgress();
+  document.getElementById("hideDone").textContent = appState.hideDone ? "+" : "−";
+}
+
+function updateProgress(){
+  const key=stateKey("daily"); const state=storage.get(key);
+  let total=0, done=0;
+  dailyData.forEach(sec => sec.items.forEach(item => { total++; if(state[item.id]) done++; }));
+  const pct = total ? Math.round(done/total*100) : 0;
+  updateMeter(pct);
+  const msgs=["少しずつ始めましょう🌱","まずは一つ完了🐾","いい感じに進んでいます！","かなり進んでいます✨","今日のリストは完了です🎉"];
+  const idx = pct>=100?4:pct>=70?3:pct>=35?2:pct>0?1:0;
+  document.getElementById("moodLine").textContent = msgs[idx];
+}
+
+/* ===================================================
+   編集モーダル
+   =================================================== */
+let editingId = null;
+let isAddMode = false;
+
+function openEditModal(id){
+  isAddMode = false; editingId = id;
+  let found = null;
+  for (const sec of dailyData){
+    const it = sec.items.find(i => i.id===id);
+    if(it){ found={...it, catKey:sec.key}; break; }
+  }
+  if(!found) return;
+  document.getElementById("editTitle").textContent = "✏️ Todoを編集";
+  document.getElementById("editMain").value = found.main;
+  document.getElementById("editNote").value = found.note||"";
+  document.getElementById("editTime").value = found.time||"anytime";
+  document.getElementById("editCategory").value = found.catKey;
+  document.getElementById("editDelete").style.display = "";
+  document.getElementById("editActions").className = "modal-actions has-delete";
+  document.getElementById("editOverlay").classList.remove("hidden");
+  document.getElementById("editMain").focus();
+}
+
+function openAddModal(){
+  isAddMode = true; editingId = null;
+  document.getElementById("editTitle").textContent = "＋ Todoを追加";
+  document.getElementById("editMain").value = "";
+  document.getElementById("editNote").value = "";
+  document.getElementById("editTime").value = "anytime";
+  document.getElementById("editCategory").value = "ponzu";
+  document.getElementById("editDelete").style.display = "none";
+  document.getElementById("editActions").className = "modal-actions";
+  document.getElementById("editOverlay").classList.remove("hidden");
+  document.getElementById("editMain").focus();
+}
+
+function closeEditModal(){ document.getElementById("editOverlay").classList.add("hidden"); editingId=null; isAddMode=false; }
+
+function saveEdit(){
+  const newMain = document.getElementById("editMain").value.trim();
+  if(!newMain) return;
+  const newNote = document.getElementById("editNote").value.trim();
+  const newTime = document.getElementById("editTime").value;
+  const newCat  = document.getElementById("editCategory").value;
+
+  if(isAddMode){
+    // 新規追加
+    const newItem = { id:genId(), main:newMain, time:newTime };
+    if(newNote) newItem.note = newNote;
+    let sec = dailyData.find(s => s.key===newCat);
+    if(!sec){ sec={key:newCat, items:[]}; dailyData.push(sec); }
+    sec.items.push(newItem);
+  } else {
+    // 既存編集（カテゴリ移動も対応）
+    let foundItem=null, fromSec=null;
+    for(const sec of dailyData){
+      const it=sec.items.find(i=>i.id===editingId);
+      if(it){ foundItem=it; fromSec=sec; break; }
+    }
+    if(!foundItem) return;
+    foundItem.main=newMain; foundItem.note=newNote||undefined; foundItem.time=newTime;
+    // カテゴリが変わった場合は移動
+    if(fromSec.key !== newCat){
+      fromSec.items = fromSec.items.filter(i=>i.id!==editingId);
+      let toSec = dailyData.find(s=>s.key===newCat);
+      if(!toSec){ toSec={key:newCat, items:[]}; dailyData.push(toSec); }
+      toSec.items.push(foundItem);
+    }
+  }
+  saveDailyData();
+  closeEditModal();
+  render();
+}
+
+function deleteItem(){
+  if(!editingId) return;
+  if(!confirm("このTodoを削除しますか？")) return;
+  for(const sec of dailyData){
+    const before=sec.items.length;
+    sec.items=sec.items.filter(i=>i.id!==editingId);
+    if(sec.items.length < before) break;
+  }
+  saveDailyData();
+  closeEditModal();
+  render();
+}
+
+document.getElementById("editCancel").addEventListener("click", closeEditModal);
+document.getElementById("editSave").addEventListener("click", saveEdit);
+document.getElementById("editDelete").addEventListener("click", deleteItem);
+document.getElementById("addTodo").addEventListener("click", openAddModal);
+document.getElementById("editOverlay").addEventListener("click", e => {
+  if(e.target===document.getElementById("editOverlay")) closeEditModal();
+});
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeEditModal(); });
+
+/* ===================================================
+   その他
+   =================================================== */
+function resetCurrentView(){
+  const label=appState.view==="daily"?"今日":appState.view==="weekly"?"今週":"今月";
+  if(!confirm(`${label}のチェックをリセットしますか？`)) return;
+  if(appState.view==="daily"){
+    localStorage.removeItem(stateKey("daily"));
+    if(isSaturday()) localStorage.removeItem(stateKey("weekly"));
+    if(isFirstSaturday()) localStorage.removeItem(stateKey("monthly"));
+  } else localStorage.removeItem(stateKey(appState.view));
+  render();
+}
+
+function watchDateChange(){
+  setInterval(()=>{ if(getToday().dateKey!==appState.todayKey) render(); }, 60000);
+}
+
+function setupTabs(){
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", ()=>{
+      appState.view=tab.dataset.view;
+      document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",String(t===tab)));
+      render();
+    });
+  });
+}
+
+function setupInstallPrompt(){
+  const panel=document.getElementById("installPanel"); const btn=document.getElementById("installButton");
+  window.addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); appState.installPrompt=e; panel.classList.add("is-visible"); });
+  btn.addEventListener("click", async()=>{
+    if(!appState.installPrompt) return;
+    appState.installPrompt.prompt(); await appState.installPrompt.userChoice;
+    appState.installPrompt=null; panel.classList.remove("is-visible");
+  });
+}
+
+function setupServiceWorker(){
+  if(!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", ()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); });
+}
+
+document.getElementById("refreshToday").addEventListener("click", render);
+document.getElementById("hideDone").addEventListener("click", ()=>{ appState.hideDone=!appState.hideDone; render(); });
+document.getElementById("resetVisible").addEventListener("click", resetCurrentView);
+
+setupTabs(); setupInstallPrompt(); setupServiceWorker(); watchDateChange();
+render();
+</script>
+</body>
+</html>
