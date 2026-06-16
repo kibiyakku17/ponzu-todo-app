@@ -736,7 +736,7 @@ let editingId=null, editingFreq='daily', isAddMode=false;
 function populateCategorySelect(selectEl, selectedId){
   selectEl.innerHTML=categories.map(c=>
     `<option value="${c.id}" ${c.id===selectedId?'selected':''}>${c.emoji||''} ${esc(c.name)}</option>`
-  ).join('');
+  ).join('')+`<option value="__new__" style="color:var(--sage);font-weight:700">＋ 新しいカテゴリを作る</option>`;
 }
 
 function openAddModal(){
@@ -806,6 +806,7 @@ function deleteItem(){
   render();
 }
 
+document.getElementById('editCategory').addEventListener('change', e=>{ if(e.target.value==='__new__') openAddCatModalFromSelect('editCategory'); });
 document.getElementById('editCancel').addEventListener('click', closeEditModal);
 document.getElementById('editSave').addEventListener('click', saveEdit);
 document.getElementById('editDelete').addEventListener('click', deleteItem);
@@ -864,6 +865,7 @@ function fallbackCopy(text){
   document.body.removeChild(ta);
 }
 
+document.getElementById('bulkCategory').addEventListener('change', e=>{ if(e.target.value==='__new__') openAddCatModalFromSelect('bulkCategory'); });
 document.getElementById('bulkAdd').addEventListener('click', openBulkModal);
 document.getElementById('bulkCancel').addEventListener('click', closeBulkModal);
 document.getElementById('bulkSave').addEventListener('click', saveBulk);
@@ -875,6 +877,7 @@ document.getElementById('copyPromptBtn').addEventListener('click', ()=>copyText(
    ===================================================== */
 let editingCatId=null;
 let selectedColor=PRESET_COLORS[0].value;
+let returnToSelect=null; // 新規カテゴリ作成後に値を戻すselectのID
 
 function buildColorPicker(){
   const picker=document.getElementById('colorPicker');
@@ -891,6 +894,11 @@ function buildColorPicker(){
       s.classList.add('selected');
     });
   });
+}
+
+function openAddCatModalFromSelect(selectId){
+  returnToSelect=selectId;
+  openAddCatModal();
 }
 
 function openAddCatModal(){
@@ -919,7 +927,7 @@ function openEditCatModal(id){
   document.getElementById('catName').focus();
 }
 
-function closeCatModal(){ document.getElementById('catOverlay').classList.add('hidden'); editingCatId=null; }
+function closeCatModal(){ document.getElementById('catOverlay').classList.add('hidden'); editingCatId=null; returnToSelect=null; }
 
 function saveCat(){
   const name=document.getElementById('catName').value.trim();
@@ -934,8 +942,16 @@ function saveCat(){
     categories.push({ id:genId(), name, emoji, color:colorObj.value, soft:colorObj.soft });
   }
   saveCategories(categories);
-  closeCatModal();
-  render();
+  if(returnToSelect){
+    const newId = editingCatId ? editingCatId : categories[categories.length-1].id;
+    const selectEl = document.getElementById(returnToSelect);
+    closeCatModal();
+    returnToSelect=null;
+    if(selectEl){ populateCategorySelect(selectEl, newId); }
+  } else {
+    closeCatModal();
+    render();
+  }
 }
 
 function deleteCat(){
