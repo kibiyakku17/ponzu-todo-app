@@ -35,7 +35,7 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 button,input,textarea,select{ font:inherit; }
-.app{ width:min(100%,520px); margin:0 auto; padding:18px 16px calc(72px + env(safe-area-inset-bottom)); }
+.app{ width:min(100%,520px); margin:0 auto; padding:18px 16px calc(86px + env(safe-area-inset-bottom)); }
 
 /* ── topbar ── */
 .topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:14px; }
@@ -86,37 +86,23 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .install.is-visible{ display:flex; }
 .install span{ color:var(--muted); font-size:12px; }
 
-/* ── controls ── */
-.controls{
-  position:sticky; top:0; z-index:4;
-  padding:8px 0 12px;
-  background:linear-gradient(180deg,rgba(238,241,234,.97),rgba(238,241,234,.82));
-  backdrop-filter:blur(10px);
-  display:flex; flex-direction:column; gap:8px;
-}
-.controls-row{ display:flex; gap:8px; align-items:center; }
-.tabs{ display:grid; grid-template-columns:repeat(3,1fr); gap:4px; padding:4px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.75); flex:1; }
-.tab{ border:0; border-radius:9px; min-height:38px; cursor:pointer; background:transparent; color:var(--muted); font-size:13px; font-weight:700; transition:background .15s,color .15s; }
-.tab[aria-selected="true"]{ background:var(--sage); color:#fff; }
-.icon-btn,.text-btn{ border:1px solid var(--line); border-radius:9px; min-height:38px; cursor:pointer; background:var(--panel); color:var(--ink); box-shadow:var(--shadow-sm); }
-.icon-btn{ width:40px; display:grid; place-items:center; font-weight:900; font-size:16px; }
-.text-btn{ padding:0 12px; font-size:13px; font-weight:700; white-space:nowrap; }
-.add-btn{ background:var(--sage); color:#fff; border:none; border-radius:9px; min-height:38px; width:40px; display:grid; place-items:center; font-size:18px; cursor:pointer; box-shadow:var(--shadow-sm); flex-shrink:0; }
-.bulk-btn{ background:var(--sky-soft); color:var(--sky); border:1px solid var(--sky); border-radius:9px; min-height:38px; padding:0 12px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; }
-
-/* ── time group ── */
-.time-label{
-  margin:22px 0 8px; display:flex; align-items:center; gap:10px;
-  color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.1em; font-family:'Zen Maru Gothic',sans-serif;
-}
-.time-label::after{ content:""; height:1px; flex:1; background:var(--line); }
+/* ── group / time labels ── */
 .group-label{
   margin:22px 4px 9px; display:flex; align-items:center; gap:10px;
   color:var(--muted); font-size:12px; font-weight:800; letter-spacing:.05em; font-family:'Zen Maru Gothic',sans-serif;
 }
-.group-label::after{ content:""; height:1px; flex:1; background:var(--line); }
+.group-label .gl-line{ flex:1; height:1px; background:var(--line); }
+.group-label .sec-hide{
+  flex-shrink:0; background:var(--panel); border:1px solid var(--line); border-radius:8px;
+  width:30px; height:26px; cursor:pointer; color:var(--muted); font-weight:900; font-size:14px; line-height:1;
+}
+.time-label{
+  margin:14px 0 6px; display:flex; align-items:center; gap:10px;
+  color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.1em; font-family:'Zen Maru Gothic',sans-serif;
+}
+.time-label::after{ content:""; height:1px; flex:1; background:var(--line); }
 
-/* ── section card（週・月用）── */
+/* ── section card（カテゴリ別）── */
 .section{
   margin-bottom:10px; padding:13px 13px 6px;
   background:var(--panel); border:1px solid var(--line);
@@ -146,34 +132,42 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .task label.txt{ min-width:0; cursor:pointer; font-size:14px; line-height:1.55; }
 .task input:checked ~ .txt .main{ color:var(--muted); text-decoration:line-through; }
 .note{ display:block; margin-top:2px; color:var(--muted); font-size:12px; }
+.note.overdue{ color:var(--coral); font-weight:700; }
 .edit-btn{
   align-self:center; background:none; border:none; cursor:pointer;
   color:var(--muted); font-size:15px; padding:4px; border-radius:6px; line-height:1;
-  opacity:0; transition:opacity .15s;
-}
-.task:hover .edit-btn,.task:focus-within .edit-btn{ opacity:1; }
-
-/* ── カテゴリ管理バー ── */
-.cat-manage-bar{
-  display:flex; align-items:center; justify-content:space-between;
-  margin:0 0 14px; padding:10px 14px;
-  background:var(--panel); border:1px dashed var(--line); border-radius:12px;
-  font-size:13px; color:var(--muted);
-}
-.cat-add-btn{
-  background:var(--sage-soft); color:var(--sage); border:1px solid var(--sage);
-  border-radius:8px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer;
 }
 
-/* ── カラーピッカー ── */
-.color-picker{ display:flex; gap:8px; flex-wrap:wrap; }
-.color-swatch{
-  width:30px; height:30px; border-radius:999px; cursor:pointer;
-  border:3px solid transparent; transition:transform .1s, border-color .1s;
-}
-.color-swatch.selected{ border-color:var(--ink); transform:scale(1.15); }
+/* ── manage page ── */
+.manage-header{ margin-bottom:12px; }
+.manage-header h1{ font-size:20px; }
+.manage-tabs{ display:flex; gap:6px; overflow-x:auto; padding:4px 0 8px; -webkit-overflow-scrolling:touch; }
+.manage-tabs::-webkit-scrollbar{ display:none; }
+.mtab{ flex-shrink:0; border:1px solid var(--line); border-radius:999px; padding:7px 14px; background:var(--panel); color:var(--muted); font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.mtab[aria-selected="true"]{ background:var(--sage); color:#fff; border-color:var(--sage); }
+.manage-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0 14px; }
+.add-btn{ background:var(--sage); color:#fff; border:none; border-radius:9px; min-height:38px; padding:0 14px; display:grid; place-items:center; font-size:14px; font-weight:700; cursor:pointer; box-shadow:var(--shadow-sm); }
+.bulk-btn{ background:var(--sky-soft); color:var(--sky); border:1px solid var(--sky); border-radius:9px; min-height:38px; padding:0 12px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.text-btn{ border:1px solid var(--line); border-radius:9px; min-height:38px; cursor:pointer; background:var(--panel); color:var(--ink); box-shadow:var(--shadow-sm); padding:0 12px; font-size:13px; font-weight:700; white-space:nowrap; }
+.icon-btn{ border:1px solid var(--line); border-radius:9px; min-height:38px; width:40px; cursor:pointer; background:var(--panel); color:var(--ink); box-shadow:var(--shadow-sm); display:grid; place-items:center; font-weight:900; font-size:16px; }
 
-/* ── モーダル共通 ── */
+/* ── bottom nav ── */
+.bottom-nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  display:flex; justify-content:center; gap:8px;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.92); backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);
+}
+.nav-btn{
+  flex:1; max-width:200px; border:none; background:transparent; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  color:var(--muted); font-size:11px; font-weight:700; padding:6px 0; border-radius:12px;
+}
+.nav-btn .nav-ico{ font-size:20px; line-height:1; }
+.nav-btn[aria-selected="true"]{ color:var(--sage); background:var(--sage-soft); }
+
+/* ── modal ── */
 .modal-overlay{
   position:fixed; inset:0; background:rgba(48,50,45,.42);
   backdrop-filter:blur(4px); z-index:100;
@@ -183,16 +177,16 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .modal-overlay.center{ align-items:center; padding:20px; }
 .modal{
   background:var(--panel); border-radius:20px 20px 0 0;
-  padding:20px 18px calc(28px + env(safe-area-inset-bottom));
+  padding:20px 18px calc(20px + env(safe-area-inset-bottom));
   width:100%; max-width:520px; margin:0 auto;
-  box-shadow:0 -8px 32px rgba(48,50,45,.12);
   display:flex; flex-direction:column; gap:14px;
-  max-height:90vh; overflow-y:auto;
+  max-height:88vh; overflow-y:auto;
 }
 .modal-overlay.center .modal{ border-radius:20px; padding:20px 18px 20px; max-height:85vh; }
 .modal h3{ margin:0; font-family:'Zen Maru Gothic',sans-serif; font-size:16px; font-weight:900; }
 .modal-field label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:4px; }
 .modal-field input[type="text"],
+.modal-field input[type="date"],
 .modal-field textarea,
 .modal-field select{
   width:100%; border:1px solid var(--line); border-radius:10px;
@@ -208,27 +202,28 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .modal-btn.save:hover{ background:#6a9472; }
 .modal-btn.delete{ background:var(--coral-soft); color:var(--coral); }
 
-/* ── 一括貼り付けモーダル専用 ── */
+/* ── 一括貼り付け ── */
 .bulk-textarea{
-  width:100%; min-height:160px; border:1px solid var(--line); border-radius:10px;
+  width:100%; min-height:150px; border:1px solid var(--line); border-radius:10px;
   padding:12px; font-size:14px; background:var(--soft); color:var(--ink);
   outline:none; resize:vertical; line-height:1.7;
 }
 .bulk-textarea:focus{ border-color:var(--sage); }
 .hint-text{ font-size:12px; color:var(--muted); line-height:1.6; margin:0; }
 .hint-text code{ background:var(--soft); border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:11px; }
-.bulk-new-cats:not(:empty){ background:var(--lavender-soft,#ede9f5); border:1px solid var(--lavender,#b39ddb); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
-.bulk-new-cats-label{ font-size:12px; font-weight:700; color:var(--muted); margin:0; }
-.bulk-new-cats-list{ display:flex; flex-wrap:wrap; gap:6px; }
-.bulk-new-cat-chip{ display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--lavender,#b39ddb); border-radius:20px; padding:4px 10px; font-size:12px; }
-.bulk-new-cat-chip input.chip-emoji{ width:28px; border:none; background:transparent; font-size:14px; text-align:center; outline:none; padding:0; }
-.bulk-new-cat-chip span{ color:var(--ink); font-weight:600; }
+.bulk-new-cats{ display:flex; flex-direction:column; gap:6px; }
+.bulk-new-cats:empty{ display:none; }
+.bulk-new-cats-label{ font-size:12px; color:var(--sage); font-weight:700; margin:0; }
+.bulk-new-cats-list{ display:flex; flex-wrap:wrap; gap:8px; }
+.bulk-new-cat-chip{ display:flex; align-items:center; gap:6px; background:var(--sage-soft); border:1px solid var(--sage); border-radius:999px; padding:4px 10px 4px 6px; font-size:13px; }
+.chip-emoji{ width:32px; border:1px solid var(--line); border-radius:6px; padding:2px; text-align:center; background:#fff; font-size:14px; }
 .bulk-preview{ display:flex; flex-direction:column; gap:6px; }
 .bulk-preview:empty{ display:none; }
-.bulk-preview-label{ font-size:12px; color:var(--muted); font-weight:600; padding:2px 0; }
-.bulk-preview-item{ display:flex; align-items:center; gap:8px; background:var(--soft); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+.bulk-preview-label{ font-size:12px; color:var(--muted); font-weight:600; padding:2px 0; margin:0; }
+.bulk-group-label{ font-size:12px; font-weight:800; color:var(--ink); margin:8px 0 2px; font-family:'Zen Maru Gothic',sans-serif; }
+.bulk-preview-item{ display:flex; align-items:center; gap:6px; background:var(--soft); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
 .bulk-item-text{ flex:1; font-size:13px; color:var(--ink); line-height:1.4; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.bulk-item-cat{ flex-shrink:0; font-size:12px; border:1px solid var(--line); border-radius:6px; padding:4px 6px; background:var(--bg); color:var(--ink); max-width:130px; }
+.bulk-item-freq,.bulk-item-cat{ flex-shrink:0; font-size:12px; border:1px solid var(--line); border-radius:6px; padding:4px 5px; background:var(--bg); color:var(--ink); max-width:96px; }
 .ai-accordion{ border:1px solid var(--line); border-radius:10px; overflow:hidden; }
 .ai-accordion summary{
   padding:10px 14px; cursor:pointer; font-size:13px; font-weight:700;
@@ -249,10 +244,15 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
   align-self:flex-start;
 }
 
+/* ── manage list rows ── */
+.cat-add-row{ margin:4px 0 14px; }
 .empty{ margin:20px 0; padding:28px 16px; border:1px dashed var(--line); border-radius:14px; color:var(--muted); text-align:center; background:rgba(255,255,255,.5); font-size:14px; line-height:1.7; }
 .empty-btn{ display:inline-block; margin-top:10px; background:var(--sage); color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:14px; font-weight:700; cursor:pointer; font-family:'Zen Maru Gothic',sans-serif; }
 .footer{ margin-top:22px; color:var(--muted); text-align:center; font-size:11px; line-height:1.7; }
 .hidden{ display:none !important; }
+.color-picker{ display:flex; gap:8px; flex-wrap:wrap; }
+.color-swatch{ width:30px; height:30px; border-radius:999px; cursor:pointer; border:3px solid transparent; transition:transform .1s, border-color .1s; }
+.color-swatch.selected{ border-color:var(--ink); transform:scale(1.15); }
 
 @media (max-width:380px){
   .app{ padding-inline:12px; }
@@ -263,52 +263,67 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 </head>
 <body>
 <div class="app">
-  <header class="topbar">
-    <div>
-      <p class="eyebrow">TODAY'S LIST</p>
-      <h1 id="dateDisplay">今日のチェック</h1>
-      <p class="subtitle" id="subtitle">毎日のことを、少しずつ。</p>
-    </div>
-    <div class="meter" id="meterWrap" aria-label="今日の進み具合">
-      <div class="meter-core">
-        <strong id="progressPct">0%</strong>
-        <span>🐾</span>
-      </div>
-    </div>
-  </header>
 
-  <div class="status">
-    <div class="notice" aria-live="polite">
+  <!-- ============ ホームページ ============ -->
+  <div id="homePage">
+    <header class="topbar">
       <div>
-        <strong id="moodLine">準備できました</strong><br>
-        <span>日付が変わると自動で今日のリストに切り替わります。</span>
+        <p class="eyebrow">TODAY'S LIST</p>
+        <h1 id="dateDisplay">今日のチェック</h1>
+        <p class="subtitle" id="subtitle">毎日のことを、少しずつ。</p>
       </div>
-      <button class="icon-btn" id="refreshToday" type="button" title="今日に更新">↻</button>
+      <div class="meter" id="meterWrap" aria-label="今日の進み具合">
+        <div class="meter-core">
+          <strong id="progressPct">0%</strong>
+          <span>🐾</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="status">
+      <div class="notice" aria-live="polite">
+        <div>
+          <strong id="moodLine">準備できました</strong><br>
+          <span>日付が変わると自動で今日のリストに切り替わります。</span>
+        </div>
+        <button class="icon-btn" id="refreshToday" type="button" title="今日に更新">↻</button>
+      </div>
+      <div class="trash" id="trashBanner"></div>
+      <div class="install hidden" id="installPanel">
+        <div><strong>ホーム画面に追加できます</strong><br><span>端末がインストールに対応しています。</span></div>
+        <button class="text-btn" id="installButton" type="button">追加</button>
+      </div>
     </div>
-    <div class="trash" id="trashBanner"></div>
-    <div class="install hidden" id="installPanel">
-      <div><strong>ホーム画面に追加できます</strong><br><span>端末がインストールに対応しています。</span></div>
-      <button class="text-btn" id="installButton" type="button">追加</button>
-    </div>
+
+    <main id="homeContent"></main>
+    <footer class="footer">チェック状態はこの端末の中だけに保存されます。</footer>
   </div>
 
-  <div class="controls" aria-label="表示切り替え">
-    <div class="controls-row">
-      <div class="tabs" role="tablist">
-        <button class="tab" type="button" role="tab" aria-selected="true" data-view="daily">毎日</button>
-        <button class="tab" type="button" role="tab" aria-selected="false" data-view="weekly">週</button>
-        <button class="tab" type="button" role="tab" aria-selected="false" data-view="monthly">月</button>
-      </div>
-      <button class="add-btn" id="addTodo" type="button" title="Todoを追加">＋</button>
-      <button class="bulk-btn" id="bulkAdd" type="button">📋 まとめて追加</button>
-      <button class="icon-btn" id="hideDone" type="button" title="完了済みを隠す">−</button>
-      <button class="text-btn" id="resetVisible" type="button">リセット</button>
+  <!-- ============ 管理ページ ============ -->
+  <div id="managePage" class="hidden">
+    <header class="manage-header">
+      <p class="eyebrow">MANAGE</p>
+      <h1>Todoの管理</h1>
+    </header>
+    <div class="manage-tabs" id="manageTabs" role="tablist">
+      <button class="mtab" role="tab" data-mview="today"   aria-selected="true">📌 今日だけ</button>
+      <button class="mtab" role="tab" data-mview="daily"   aria-selected="false">🔁 毎日</button>
+      <button class="mtab" role="tab" data-mview="weekly"  aria-selected="false">🎀 週</button>
+      <button class="mtab" role="tab" data-mview="monthly" aria-selected="false">🌙 月</button>
+      <button class="mtab" role="tab" data-mview="cats"    aria-selected="false">🏷️ カテゴリ</button>
+      <button class="mtab" role="tab" data-mview="trash"   aria-selected="false">🗑️ ごみ出し</button>
     </div>
+    <main id="manageContent"></main>
+    <footer class="footer">ここで作ったタスクが、ホームの今日のリストに表示されます。</footer>
   </div>
 
-  <main id="content"></main>
-  <footer class="footer">チェック状態はこの端末の中だけに保存されます。</footer>
 </div>
+
+<!-- ============ 下部ナビ ============ -->
+<nav class="bottom-nav">
+  <button class="nav-btn" id="navHome" data-page="home" aria-selected="true"><span class="nav-ico">🏠</span>ホーム</button>
+  <button class="nav-btn" id="navManage" data-page="manage" aria-selected="false"><span class="nav-ico">⚙️</span>管理</button>
+</nav>
 
 <!-- Todo編集モーダル -->
 <div class="modal-overlay hidden" id="editOverlay" role="dialog" aria-modal="true">
@@ -332,6 +347,10 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
         <option value="anytime">🕐 時間未設定</option>
       </select>
     </div>
+    <div class="modal-field hidden" id="editDateField">
+      <label for="editDate">対象日</label>
+      <input type="date" id="editDate">
+    </div>
     <div class="modal-field">
       <label for="editCategory">カテゴリ</label>
       <select id="editCategory"></select>
@@ -349,27 +368,21 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
   <div class="modal">
     <h3>📋 まとめて追加</h3>
     <div>
-      <p class="hint-text">1行に1つのタスクを入力。箇条書き記号（-・*）や番号は自動で除去されます。<br><code>[カテゴリ名]</code> を行頭に書くとカテゴリを自動認識します。</p>
+      <p class="hint-text">1行に1つのタスク。箇条書き記号（-・*）や番号は自動で除去されます。<br>
+        行頭に <code>[今日だけ]</code> <code>[毎日]</code> <code>[週]</code> <code>[月]</code> を書くと、以降の行がその種別に振り分けられます。<code>[家事]</code> のようなカテゴリ名も自動認識します。</p>
     </div>
     <div class="modal-field">
       <label for="bulkText">タスクを貼り付け</label>
-      <textarea class="bulk-textarea" id="bulkText" placeholder="例：&#10;- [仕事] 資料作成&#10;- [家事] 洗濯&#10;- 歯医者の予約"></textarea>
+      <textarea class="bulk-textarea" id="bulkText" placeholder="例：&#10;[今日だけ]&#10;[家事]&#10;病院の予約電話をする&#10;&#10;[毎日]&#10;[健康]&#10;ストレッチをする"></textarea>
     </div>
     <div id="bulkNewCats" class="bulk-new-cats"></div>
     <div id="bulkPreview" class="bulk-preview"></div>
     <details class="ai-accordion">
       <summary>🤖 AIに頼むときはこう聞いてみて</summary>
       <div class="ai-accordion-body">
-        <p class="hint-text">ChatGPTやClaudeなどのAIチャットに貼って使ってください。返ってきたリストをそのまま上のテキストエリアに貼り付けると <code>[カテゴリ名]</code> も自動認識します。</p>
+        <p class="hint-text">ChatGPTやClaudeなどのAIチャットに貼って使ってください。返ってきたリストをそのまま上のテキストエリアに貼り付けると、種別とカテゴリを自動認識します。</p>
         <button class="copy-prompt-btn" id="copyPromptBtn">📋 プロンプトをコピー</button>
-        <div class="prompt-box" id="aiPromptBox">今日やることを箇条書きでリストアップして。
-条件：
-・1行に1つのタスクだけ書く
-・余計な説明や前置きは書かず、リストだけ出力する
-・各タスクの行頭に [カテゴリ名] をつけて（例：[仕事]・[家事]・[買い物]など）
-・「-」から始める形式で書いて
-
-タスクの内容：（ここに状況や相談したいことを書く）</div>
+        <div class="prompt-box" id="aiPromptBox"></div>
       </div>
     </details>
     <div class="modal-actions">
@@ -418,7 +431,7 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 
 <!-- トースト -->
 <div id="toast" style="
-  position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);
   background:rgba(48,50,45,.88);color:#fff;padding:9px 18px;border-radius:999px;
   font-size:13px;opacity:0;transition:opacity .25s,transform .25s;
   pointer-events:none;white-space:nowrap;z-index:300;
@@ -454,14 +467,33 @@ const DEFAULT_TRASH = {
   6: null
 };
 
-const AI_PROMPT = `今日やることを箇条書きでリストアップして。
+// 種別タグ → freq
+const SECTION_TAGS = {
+  '今日だけ':'today', '今日':'today',
+  '毎日':'daily',
+  '週':'weekly', '週次':'weekly',
+  '月':'monthly', '月次':'monthly',
+};
+// カテゴリ名に使えない予約語
+const RESERVED_CAT_NAMES = ['今日だけ','今日','毎日','週','月','週次','月次'];
+
+const FREQ_META = {
+  today:   { label:'📌 今日だけ', emoji:'📌' },
+  daily:   { label:'🔁 毎日',    emoji:'🔁' },
+  weekly:  { label:'🎀 週',      emoji:'🎀' },
+  monthly: { label:'🌙 月',      emoji:'🌙' },
+};
+
+const AI_PROMPT = `今日やること・今週やること・今月やることを整理してリストアップして。
 条件：
 ・1行に1つのタスクだけ書く
 ・余計な説明や前置きは書かず、リストだけ出力する
-・各タスクの行頭に [カテゴリ名] をつけて（例：[仕事]・[家事]・[買い物]など）
-・「-」から始める形式で書いて
+・「-」から始める形式で書く
+・タスクの種別ごとに見出しをつける。見出しは [今日だけ]［毎日］［週］［月］ のいずれかを使う
+・できれば見出しの下にカテゴリ名も [家事] のように書く
 
 タスクの内容：（ここに状況や相談したいことを書く）`;
+document.getElementById('aiPromptBox').textContent = AI_PROMPT;
 
 /* =====================================================
    ストレージ
@@ -475,42 +507,31 @@ const storage = {
 /* =====================================================
    カテゴリ管理
    ===================================================== */
-function loadCategories(){
-  return storage.get('todo_categories_v2') || [];
-}
-function saveCategories(cats){
-  storage.set('todo_categories_v2', cats);
-}
+function loadCategories(){ return storage.get('todo_categories_v3') || []; }
+function saveCategories(cats){ storage.set('todo_categories_v3', cats); }
 let categories = loadCategories();
 
 function genId(){ return 'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
-
 function getCat(id){ return categories.find(c=>c.id===id); }
 
 /* =====================================================
-   Todo項目管理
+   Todo項目管理（today / daily / weekly / monthly）
    ===================================================== */
-function loadItems(freq){
-  return storage.get(`todo_items_${freq}_v2`) || [];
-}
-function saveItems(freq, items){
-  storage.set(`todo_items_${freq}_v2`, items);
-}
+const FREQS = ['today','daily','weekly','monthly'];
+function loadItems(freq){ return storage.get(`todo_items_${freq}_v3`) || []; }
+function saveItems(freq, items){ storage.set(`todo_items_${freq}_v3`, items); }
 
 /* =====================================================
    ごみ出し設定
    ===================================================== */
-function loadTrashSchedule(){
-  return storage.get('trash_schedule_v2') || DEFAULT_TRASH;
-}
-function saveTrashSchedule(s){ storage.set('trash_schedule_v2', s); }
+function loadTrashSchedule(){ return storage.get('trash_schedule_v3') || DEFAULT_TRASH; }
+function saveTrashSchedule(s){ storage.set('trash_schedule_v3', s); }
 let trashSchedule = loadTrashSchedule();
 
 /* =====================================================
    日付ユーティリティ
    ===================================================== */
 const pad = n => String(n).padStart(2,'0');
-
 function getToday(){
   const p = new URLSearchParams(location.search).get('date');
   const now = p ? new Date(`${p}T12:00:00`) : new Date();
@@ -532,9 +553,16 @@ function stateKey(view){
   if(view==='weekly') return `weekly_${t.y}-W${getWeekNumber(t.date)}`;
   return `monthly_${t.y}-${pad(t.m)}`;
 }
-
 function isSaturday(){ return getToday().dow===6; }
 function isFirstSaturday(){ const t=getToday(); return t.dow===6&&t.d<=7; }
+// "6/20" → "YYYY-MM-DD"（今年）
+function parseShortDate(s){
+  const m=s.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if(!m) return null;
+  const t=getToday();
+  return `${t.y}-${pad(+m[1])}-${pad(+m[2])}`;
+}
+function fmtMD(dateKey){ const p=dateKey.split('-'); return `${+p[1]}/${+p[2]}`; }
 
 /* =====================================================
    肉球メーター
@@ -559,11 +587,27 @@ function updateMeter(pct){
   document.querySelectorAll('.puff').forEach(p=>p.classList.toggle('filled',Number(p.dataset.index)<filled));
   document.getElementById('progressPct').textContent=pct+'%';
 }
+function updateProgress(){
+  const items=loadItems('daily');
+  const state=storage.getObj(stateKey('daily'));
+  const total=items.length, done=items.filter(i=>state[i.id]).length;
+  const pct=total?Math.round(done/total*100):0;
+  updateMeter(pct);
+  const msgs=['少しずつ始めましょう🌱','まずは一つ完了🐾','いい感じに進んでいます！','かなり進んでいます✨','今日のリストは完了です🎉'];
+  const idx=pct>=100?4:pct>=70?3:pct>=35?2:pct>0?1:0;
+  document.getElementById('moodLine').textContent=msgs[idx];
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 /* =====================================================
    アプリ状態
    ===================================================== */
-const appState = { view:'daily', hideDone:false, todayKey:'', installPrompt:null };
+const appState = {
+  page:'home', manageView:'today',
+  hideDone:{ daily:false, weekly:false, monthly:false },
+  todayKey:'', installPrompt:null,
+};
 
 /* =====================================================
    ヘッダー・ごみ出し
@@ -571,10 +615,9 @@ const appState = { view:'daily', hideDone:false, todayKey:'', installPrompt:null
 function updateDateHeader(){
   const t=getToday(); appState.todayKey=t.dateKey;
   document.getElementById('dateDisplay').textContent=`${t.m}月${t.d}日（${DOW_NAMES[t.dow]}）`;
-  const sub = isSaturday() ? '今日は週1タスクも表示されます。'+(isFirstSaturday()?' 月1タスクも！':'') : '毎日のことを、少しずつ。';
+  const sub = isSaturday() ? '今日は週のタスクも表示されます。'+(isFirstSaturday()?' 月のタスクも！':'') : '毎日のことを、少しずつ。';
   document.getElementById('subtitle').textContent=sub;
 }
-
 function renderTrash(){
   const t=getToday(); const el=document.getElementById('trashBanner');
   const info=trashSchedule[t.dow];
@@ -585,160 +628,291 @@ function renderTrash(){
     el.className=`trash ${info.cls}`;
     el.innerHTML=`<div class="trash-mark">${info.mark}</div><div><strong>今日のごみ出し：${info.label}</strong><span>朝8時までに出しましょう。</span></div><button class="trash-settings-btn" id="trashSettingsBtn" title="ごみ出し設定">⚙️</button>`;
   }
-  document.getElementById('trashSettingsBtn').addEventListener('click', openTrashSettings);
+  document.getElementById('trashSettingsBtn').addEventListener('click', ()=>{ setPage('manage'); setManageView('trash'); });
 }
 
 /* =====================================================
-   メインレンダリング
+   ルーティング
    ===================================================== */
 function render(){
   buildPuffs();
-  updateDateHeader();
-  renderTrash();
-  const content=document.getElementById('content');
-  const freq=appState.view;
-  const items=loadItems(freq);
-  const stKey=stateKey(freq);
-  const state=storage.getObj(stKey);
-
-  if(categories.length===0){
-    content.innerHTML=`<div class="empty">まだカテゴリがありません。<br>＋からカテゴリを作ってみましょう🐾<br><button class="empty-btn" onclick="openAddCatModal()">＋ カテゴリを追加</button></div>`;
-    updateProgress();
-    document.getElementById('hideDone').textContent=appState.hideDone?'+':'−';
-    return;
-  }
-
-  if(freq==='daily'){
-    renderDailyContent(content, items, state, stKey);
-    // 土曜：週タスクも追加表示
-    if(isSaturday()){
-      const wk=stateKey('weekly'), ws=storage.getObj(wk);
-      const wItems=loadItems('weekly');
-      content.innerHTML+=`<div class="group-label">🎀 週1タスク</div>`+buildCatSections(wItems,ws,wk);
-    }
-    if(isFirstSaturday()){
-      const mk=stateKey('monthly'), ms=storage.getObj(mk);
-      const mItems=loadItems('monthly');
-      content.innerHTML+=`<div class="group-label">🌙 月1タスク</div>`+buildCatSections(mItems,ms,mk);
-    }
-  } else {
-    const html=buildCatSections(items,state,stKey);
-    content.innerHTML=html||`<div class="empty">Todoがまだありません。<br>「＋」ボタンから追加してみましょう。</div>`;
-  }
-
-  // イベント設定
-  content.querySelectorAll('input[type="checkbox"]').forEach(input=>{
-    input.addEventListener('change',()=>{
-      const next=storage.getObj(input.dataset.stateKey);
-      next[input.dataset.id]=input.checked;
-      storage.set(input.dataset.stateKey, next);
-      updateProgress();
-      if(appState.hideDone) render();
-    });
-  });
-  content.querySelectorAll('.edit-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{ e.preventDefault(); openEditModal(btn.dataset.editId); });
-  });
-  content.querySelectorAll('.edit-cat-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{ e.preventDefault(); openEditCatModal(btn.dataset.catId); });
-  });
-
-  updateProgress();
-  document.getElementById('hideDone').textContent=appState.hideDone?'+':'−';
+  if(appState.page==='home') renderHome();
+  else renderManage();
+}
+function setPage(p){
+  appState.page=p;
+  document.getElementById('homePage').classList.toggle('hidden', p!=='home');
+  document.getElementById('managePage').classList.toggle('hidden', p!=='manage');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.page===p)));
+  window.scrollTo(0,0);
+  render();
+}
+function setManageView(v){
+  appState.manageView=v;
+  document.querySelectorAll('.mtab').forEach(t=>t.setAttribute('aria-selected', String(t.dataset.mview===v)));
+  renderManage();
 }
 
-/* 毎日タブ：時間帯ごとにグループ */
-function renderDailyContent(content, items, state, stKey){
-  const buckets={};
-  TIME_ORDER.forEach(t=>{ buckets[t]=[]; });
+/* =====================================================
+   ホーム描画
+   ===================================================== */
+function groupLabel(text, secKey){
+  const btn = secKey
+    ? `<button class="sec-hide" data-sec="${secKey}" title="完了済みの表示切替">${appState.hideDone[secKey]?'+':'−'}</button>`
+    : '';
+  return `<div class="group-label"><span>${text}</span><i class="gl-line"></i>${btn}</div>`;
+}
+
+function taskRow(item, accent, checked, attrs, extraNote){
+  const cat=getCat(item.categoryId);
+  const catLabel=cat?`${cat.emoji||''} ${esc(cat.name)}`:'';
+  return `<div class="task" style="--accent:${accent}">
+    <input type="checkbox" ${attrs} ${checked?'checked':''}>
+    <label class="box" for="${attrs.match(/id="([^"]+)"/)[1]}" aria-hidden="true"></label>
+    <label class="txt" for="${attrs.match(/id="([^"]+)"/)[1]}">
+      <span class="main">${esc(item.main)}</span>
+      ${item.note?`<span class="note">${esc(item.note)}</span>`:''}
+      ${extraNote?extraNote:''}
+      ${catLabel?`<span class="note" style="color:${accent}">${catLabel}</span>`:''}
+    </label>
+  </div>`;
+}
+
+function buildTodayHome(items){
+  let rows='';
   items.forEach(item=>{
     const cat=getCat(item.categoryId);
     const accent=cat?cat.color:'#888B7E';
-    const time=item.time||'anytime';
-    buckets[time].push({...item, accent});
+    rows+=taskRow(item, accent, false, `id="t_${item.id}" data-today-id="${item.id}"`);
   });
+  return rows;
+}
 
+function buildDailyHome(items, state, hide){
+  const buckets={}; TIME_ORDER.forEach(t=>buckets[t]=[]);
+  items.forEach(item=>{ buckets[item.time||'anytime'].push(item); });
   let html='';
   TIME_ORDER.forEach(time=>{
     let its=buckets[time];
-    if(!its.length) return;
-    if(appState.hideDone) its=its.filter(it=>!state[it.id]);
+    if(hide) its=its.filter(it=>!state[it.id]);
     if(!its.length) return;
     html+=`<div class="time-label">${TIME_LABELS[time]}</div>`;
     its.forEach(item=>{
-      const checked=state[item.id]?'checked':'';
       const cat=getCat(item.categoryId);
-      const catLabel=cat?`${cat.emoji||''} ${cat.name}`:'';
-      html+=`<div class="task" data-task="${item.id}" style="--accent:${item.accent}">
-        <input type="checkbox" id="${item.id}" data-id="${item.id}" data-state-key="${stKey}" ${checked}>
-        <label class="box" for="${item.id}" aria-hidden="true"></label>
-        <label class="txt" for="${item.id}">
-          <span class="main">${esc(item.main)}</span>
-          ${item.note?`<span class="note">${esc(item.note)}</span>`:''}
-          ${catLabel?`<span class="note" style="color:${item.accent}">${catLabel}</span>`:''}
-        </label>
-        <button class="edit-btn" data-edit-id="${item.id}" title="編集" aria-label="${esc(item.main)}を編集">✏️</button>
-      </div>`;
+      const accent=cat?cat.color:'#888B7E';
+      html+=taskRow(item, accent, !!state[item.id], `id="d_${item.id}" data-id="${item.id}" data-state-key="${stateKey('daily')}"`);
     });
   });
-  content.innerHTML=html||`<div class="empty">全て完了！今日もお疲れさまでした🐾</div>`;
+  return html;
 }
 
-/* 週・月タブ：カテゴリごとにセクション */
-function buildCatSections(items, state, stKey){
-  if(!items.length) return '';
-  // カテゴリ順で並べる
+function buildCatHome(items, state, freq, hide){
   const bycat={};
-  items.forEach(item=>{
-    if(!bycat[item.categoryId]) bycat[item.categoryId]=[];
-    bycat[item.categoryId].push(item);
-  });
+  items.forEach(item=>{ (bycat[item.categoryId]=bycat[item.categoryId]||[]).push(item); });
   return categories.map(cat=>{
-    const its=bycat[cat.id]||[];
+    let its=bycat[cat.id]||[];
+    if(hide) its=its.filter(i=>!state[i.id]);
     if(!its.length) return '';
-    const done=its.filter(i=>state[i.id]).length;
+    const total=(bycat[cat.id]||[]).length, done=(bycat[cat.id]||[]).filter(i=>state[i.id]).length;
     let rows='';
     its.forEach(item=>{
-      if(appState.hideDone && state[item.id]) return;
-      const checked=state[item.id]?'checked':'';
-      rows+=`<div class="task" data-task="${item.id}" style="--accent:${cat.color}">
-        <input type="checkbox" id="${item.id}" data-id="${item.id}" data-state-key="${stKey}" ${checked}>
-        <label class="box" for="${item.id}" aria-hidden="true"></label>
-        <label class="txt" for="${item.id}">
-          <span class="main">${esc(item.main)}</span>
-          ${item.note?`<span class="note">${esc(item.note)}</span>`:''}
-        </label>
-        <button class="edit-btn" data-edit-id="${item.id}" title="編集" aria-label="${esc(item.main)}を編集">✏️</button>
-      </div>`;
+      rows+=taskRow(item, cat.color, !!state[item.id], `id="${freq[0]}_${item.id}" data-id="${item.id}" data-state-key="${stateKey(freq)}"`);
     });
-    if(!rows&&appState.hideDone) return '';
-    return `<section class="section" style="--accent:${cat.color}" data-section="${cat.id}">
-      <div class="section-head">
-        <h2>${cat.emoji||''} ${esc(cat.name)}</h2>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="count">${done}/${its.length}</span>
-          <button class="edit-cat-btn" data-cat-id="${cat.id}" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">⚙️</button>
-        </div>
-      </div>
+    return `<section class="section" style="--accent:${cat.color}">
+      <div class="section-head"><h2>${cat.emoji||''} ${esc(cat.name)}</h2><span class="count">${done}/${total}</span></div>
       ${rows}
     </section>`;
   }).join('');
 }
 
-function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderHome(){
+  updateDateHeader();
+  renderTrash();
+  updateProgress();
+  const c=document.getElementById('homeContent');
+  const t=getToday();
+  let html='';
+
+  // 📌 今日だけ（対象日が今日 & 未完了のみ）
+  const todayItems=loadItems('today').filter(i=>i.targetDate===t.dateKey && !i.completed);
+  if(todayItems.length){
+    html+=groupLabel('📌 今日だけ')+buildTodayHome(todayItems);
+  }
+
+  // 🔁 毎日
+  const dItems=loadItems('daily');
+  if(dItems.length){
+    const dState=storage.getObj(stateKey('daily'));
+    const body=buildDailyHome(dItems, dState, appState.hideDone.daily);
+    html+=groupLabel('🔁 毎日','daily')+(body||`<div class="empty">毎日のタスクは全部完了！おつかれさま🐾</div>`);
+  }
+
+  // 🎀 今週（土曜のみ）
+  if(isSaturday()){
+    const wItems=loadItems('weekly');
+    if(wItems.length){
+      const wState=storage.getObj(stateKey('weekly'));
+      const body=buildCatHome(wItems, wState, 'weekly', appState.hideDone.weekly);
+      html+=groupLabel('🎀 今週のタスク','weekly')+(body||`<div class="empty">今週のタスクは完了！</div>`);
+    }
+  }
+  // 🌙 今月（月初の土曜のみ）
+  if(isFirstSaturday()){
+    const mItems=loadItems('monthly');
+    if(mItems.length){
+      const mState=storage.getObj(stateKey('monthly'));
+      const body=buildCatHome(mItems, mState, 'monthly', appState.hideDone.monthly);
+      html+=groupLabel('🌙 今月のタスク','monthly')+(body||`<div class="empty">今月のタスクは完了！</div>`);
+    }
+  }
+
+  if(!html){
+    html=`<div class="empty">今日のタスクはまだありません。<br>下の「⚙️ 管理」からタスクを追加しましょう🐾<br><button class="empty-btn" id="goManageBtn">⚙️ 管理ページへ</button></div>`;
+  }
+  c.innerHTML=html;
+
+  // checkbox: daily/weekly/monthly（日付キー方式）
+  c.querySelectorAll('input[data-state-key]').forEach(input=>{
+    input.addEventListener('change',()=>{
+      const next=storage.getObj(input.dataset.stateKey);
+      next[input.dataset.id]=input.checked;
+      storage.set(input.dataset.stateKey, next);
+      renderHome();
+    });
+  });
+  // checkbox: today（completedフラグ、チェックで即非表示）
+  c.querySelectorAll('input[data-today-id]').forEach(input=>{
+    input.addEventListener('change',()=>{
+      const items=loadItems('today');
+      const it=items.find(i=>i.id===input.dataset.todayId);
+      if(it){ it.completed=true; saveItems('today', items); }
+      renderHome();
+    });
+  });
+  // section hide toggle
+  c.querySelectorAll('.sec-hide').forEach(btn=>{
+    btn.addEventListener('click',()=>{ appState.hideDone[btn.dataset.sec]=!appState.hideDone[btn.dataset.sec]; renderHome(); });
+  });
+  const gm=document.getElementById('goManageBtn');
+  if(gm) gm.addEventListener('click',()=>setPage('manage'));
+}
 
 /* =====================================================
-   進捗
+   管理ページ描画
    ===================================================== */
-function updateProgress(){
-  const items=loadItems('daily');
-  const state=storage.getObj(stateKey('daily'));
-  const total=items.length, done=items.filter(i=>state[i.id]).length;
-  const pct=total?Math.round(done/total*100):0;
-  updateMeter(pct);
-  const msgs=['少しずつ始めましょう🌱','まずは一つ完了🐾','いい感じに進んでいます！','かなり進んでいます✨','今日のリストは完了です🎉'];
-  const idx=pct>=100?4:pct>=70?3:pct>=35?2:pct>0?1:0;
-  document.getElementById('moodLine').textContent=msgs[idx];
+function renderManage(){
+  const c=document.getElementById('manageContent');
+  const v=appState.manageView;
+  if(v==='cats'){ c.innerHTML=buildManageCats(); bindManageCats(c); return; }
+  if(v==='trash'){ c.innerHTML=buildManageTrash(); bindManageTrash(c); return; }
+
+  // item types: today/daily/weekly/monthly
+  const resetBtn = v!=='today' ? `<button class="text-btn" id="mgReset">チェックをリセット</button>` : '';
+  let html=`<div class="manage-actions">
+    <button class="add-btn" id="mgAdd">＋ 個別追加</button>
+    <button class="bulk-btn" id="mgBulk">📋 まとめて追加</button>
+    ${resetBtn}
+  </div>`;
+
+  if(categories.length===0){
+    html+=`<div class="empty">先にカテゴリを作りましょう。<br><button class="empty-btn" id="mgAddCat">＋ カテゴリを追加</button></div>`;
+    c.innerHTML=html; bindManageItems(c); return;
+  }
+
+  const items=loadItems(v);
+  if(!items.length){
+    html+=`<div class="empty">${FREQ_META[v].label}のタスクはまだありません。</div>`;
+    c.innerHTML=html; bindManageItems(c); return;
+  }
+  html+=buildManageItemList(v, items);
+  c.innerHTML=html;
+  bindManageItems(c);
+}
+
+function buildManageItemList(freq, items){
+  const t=getToday();
+  const bycat={};
+  items.forEach(item=>{ (bycat[item.categoryId]=bycat[item.categoryId]||[]).push(item); });
+  // カテゴリ無し（孤立）も拾う
+  const catList=[...categories];
+  return catList.map(cat=>{
+    const its=bycat[cat.id]||[];
+    if(!its.length) return '';
+    let rows='';
+    its.forEach(item=>{
+      let meta='';
+      if(freq==='today'){
+        const overdue = item.targetDate < t.dateKey && !item.completed;
+        if(item.completed) meta=`<span class="note">✓ 完了</span>`;
+        else if(overdue)   meta=`<span class="note overdue">対象日：${fmtMD(item.targetDate)}・期限切れ</span>`;
+        else               meta=`<span class="note">対象日：${fmtMD(item.targetDate)}</span>`;
+      } else if(freq==='daily'){
+        meta=`<span class="note">${TIME_LABELS[item.time||'anytime']}</span>`;
+      }
+      rows+=`<div class="task" style="--accent:${cat.color};grid-template-columns:1fr auto">
+        <label class="txt">
+          <span class="main">${esc(item.main)}</span>
+          ${item.note?`<span class="note">${esc(item.note)}</span>`:''}
+          ${meta}
+        </label>
+        <button class="edit-btn" data-edit-id="${item.id}" data-edit-freq="${freq}" title="編集">✏️</button>
+      </div>`;
+    });
+    return `<section class="section" style="--accent:${cat.color}">
+      <div class="section-head"><h2>${cat.emoji||''} ${esc(cat.name)}</h2>
+        <button class="edit-btn" data-cat-id="${cat.id}" title="カテゴリ編集">⚙️</button></div>
+      ${rows}
+    </section>`;
+  }).join('');
+}
+
+function bindManageItems(c){
+  const add=document.getElementById('mgAdd'); if(add) add.addEventListener('click',()=>openAddModal(appState.manageView));
+  const bulk=document.getElementById('mgBulk'); if(bulk) bulk.addEventListener('click',openBulkModal);
+  const reset=document.getElementById('mgReset'); if(reset) reset.addEventListener('click',resetCurrentView);
+  const addCat=document.getElementById('mgAddCat'); if(addCat) addCat.addEventListener('click',openAddCatModal);
+  c.querySelectorAll('.edit-btn[data-edit-id]').forEach(b=>b.addEventListener('click',()=>openEditModal(b.dataset.editId, b.dataset.editFreq)));
+  c.querySelectorAll('.edit-btn[data-cat-id]').forEach(b=>b.addEventListener('click',()=>openEditCatModal(b.dataset.catId)));
+}
+
+function buildManageCats(){
+  let html=`<div class="manage-actions cat-add-row"><button class="add-btn" id="mgAddCat2">＋ カテゴリを追加</button></div>`;
+  if(!categories.length){
+    html+=`<div class="empty">まだカテゴリがありません。<br>＋から作ってみましょう🐾</div>`;
+    return html;
+  }
+  html+=categories.map(cat=>{
+    const count=FREQS.reduce((s,f)=>s+loadItems(f).filter(i=>i.categoryId===cat.id).length,0);
+    return `<section class="section" style="--accent:${cat.color}">
+      <div class="section-head">
+        <h2>${cat.emoji||''} ${esc(cat.name)}</h2>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="count">${count}件</span>
+          <button class="edit-btn" data-cat-id="${cat.id}" title="編集">✏️</button>
+        </div>
+      </div>
+    </section>`;
+  }).join('');
+  return html;
+}
+function bindManageCats(c){
+  const add=document.getElementById('mgAddCat2'); if(add) add.addEventListener('click',openAddCatModal);
+  c.querySelectorAll('.edit-btn[data-cat-id]').forEach(b=>b.addEventListener('click',()=>openEditCatModal(b.dataset.catId)));
+}
+
+function buildManageTrash(){
+  let rows=DOW_NAMES.map((dow,i)=>{
+    const info=trashSchedule[i];
+    return `<div class="task" style="--accent:var(--line);grid-template-columns:48px 1fr">
+      <label class="txt" style="font-weight:700">${dow}曜</label>
+      <label class="txt">${info?esc(info.label):'<span class="note">なし</span>'}</label>
+    </div>`;
+  }).join('');
+  return `<div class="manage-actions"><button class="add-btn" id="mgTrashEdit">⚙️ 設定を編集</button></div>
+    <section class="section" style="--accent:var(--sky)">${rows}</section>`;
+}
+function bindManageTrash(c){
+  const e=document.getElementById('mgTrashEdit'); if(e) e.addEventListener('click',openTrashSettings);
 }
 
 /* =====================================================
@@ -751,28 +925,32 @@ function populateCategorySelect(selectEl, selectedId){
     `<option value="${c.id}" ${c.id===selectedId?'selected':''}>${c.emoji||''} ${esc(c.name)}</option>`
   ).join('')+`<option value="__new__" style="color:var(--sage);font-weight:700">＋ 新しいカテゴリを作る</option>`;
 }
+function toggleEditFields(freq){
+  document.getElementById('editTimeField').classList.toggle('hidden', freq!=='daily');
+  document.getElementById('editDateField').classList.toggle('hidden', freq!=='today');
+}
 
-function openAddModal(){
+function openAddModal(freq){
+  if(freq==='cats'||freq==='trash') freq='daily';
   if(categories.length===0){ openAddCatModal(); return; }
-  isAddMode=true; editingId=null; editingFreq=appState.view;
-  document.getElementById('editTitle').textContent='＋ Todoを追加';
+  isAddMode=true; editingId=null; editingFreq=freq;
+  document.getElementById('editTitle').textContent=`＋ ${FREQ_META[freq].label}に追加`;
   document.getElementById('editMain').value='';
   document.getElementById('editNote').value='';
   document.getElementById('editTime').value='anytime';
-  document.getElementById('editTimeField').style.display=editingFreq==='daily'?'':'none';
+  document.getElementById('editDate').value=getToday().dateKey;
+  toggleEditFields(freq);
   populateCategorySelect(document.getElementById('editCategory'), categories[0]?.id);
   document.getElementById('editDelete').classList.add('hidden');
   document.getElementById('editActions').className='modal-actions';
   document.getElementById('editOverlay').classList.remove('hidden');
   document.getElementById('editMain').focus();
 }
-
-function openEditModal(id){
-  // Find item across all freqs
-  let found=null, foundFreq='daily';
-  for(const freq of ['daily','weekly','monthly']){
-    const item=loadItems(freq).find(i=>i.id===id);
-    if(item){ found=item; foundFreq=freq; break; }
+function openEditModal(id, freqHint){
+  let found=null, foundFreq=freqHint||'daily';
+  if(freqHint){ found=loadItems(freqHint).find(i=>i.id===id); }
+  if(!found){
+    for(const freq of FREQS){ const item=loadItems(freq).find(i=>i.id===id); if(item){ found=item; foundFreq=freq; break; } }
   }
   if(!found) return;
   isAddMode=false; editingId=id; editingFreq=foundFreq;
@@ -780,41 +958,46 @@ function openEditModal(id){
   document.getElementById('editMain').value=found.main;
   document.getElementById('editNote').value=found.note||'';
   document.getElementById('editTime').value=found.time||'anytime';
-  document.getElementById('editTimeField').style.display=foundFreq==='daily'?'':'none';
+  document.getElementById('editDate').value=found.targetDate||getToday().dateKey;
+  toggleEditFields(foundFreq);
   populateCategorySelect(document.getElementById('editCategory'), found.categoryId);
   document.getElementById('editDelete').classList.remove('hidden');
   document.getElementById('editActions').className='modal-actions has-delete';
   document.getElementById('editOverlay').classList.remove('hidden');
   document.getElementById('editMain').focus();
 }
-
 function closeEditModal(){ document.getElementById('editOverlay').classList.add('hidden'); editingId=null; isAddMode=false; }
 
 function saveEdit(){
   const newMain=document.getElementById('editMain').value.trim();
   if(!newMain){ document.getElementById('editMain').focus(); return; }
   const newNote=document.getElementById('editNote').value.trim();
-  const newTime=document.getElementById('editTime').value;
   const newCatId=document.getElementById('editCategory').value;
+  if(newCatId==='__new__'){ openAddCatModalFromSelect('editCategory'); return; }
 
   const items=loadItems(editingFreq);
   if(isAddMode){
-    items.push({ id:genId(), main:newMain, note:newNote||undefined, time:newTime, categoryId:newCatId });
+    const base={ id:genId(), main:newMain, note:newNote||undefined, categoryId:newCatId };
+    if(editingFreq==='today'){ base.targetDate=document.getElementById('editDate').value||getToday().dateKey; base.completed=false; }
+    else if(editingFreq==='daily'){ base.time=document.getElementById('editTime').value; }
+    else { base.time='anytime'; }
+    items.push(base);
   } else {
     const idx=items.findIndex(i=>i.id===editingId);
     if(idx<0) return;
-    items[idx]={ ...items[idx], main:newMain, note:newNote||undefined, time:newTime, categoryId:newCatId };
+    const it={ ...items[idx], main:newMain, note:newNote||undefined, categoryId:newCatId };
+    if(editingFreq==='today'){ it.targetDate=document.getElementById('editDate').value||getToday().dateKey; }
+    else if(editingFreq==='daily'){ it.time=document.getElementById('editTime').value; }
+    items[idx]=it;
   }
   saveItems(editingFreq, items);
   closeEditModal();
   render();
 }
-
 function deleteItem(){
   if(!editingId) return;
   if(!confirm('このTodoを削除しますか？')) return;
-  const items=loadItems(editingFreq).filter(i=>i.id!==editingId);
-  saveItems(editingFreq, items);
+  saveItems(editingFreq, loadItems(editingFreq).filter(i=>i.id!==editingId));
   closeEditModal();
   render();
 }
@@ -823,90 +1006,97 @@ document.getElementById('editCategory').addEventListener('change', e=>{ if(e.tar
 document.getElementById('editCancel').addEventListener('click', closeEditModal);
 document.getElementById('editSave').addEventListener('click', saveEdit);
 document.getElementById('editDelete').addEventListener('click', deleteItem);
-document.getElementById('addTodo').addEventListener('click', openAddModal);
 document.getElementById('editOverlay').addEventListener('click', e=>{ if(e.target===document.getElementById('editOverlay')) closeEditModal(); });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeEditModal(); closeBulkModal(); closeCatModal(); } });
 
 /* =====================================================
-   一括貼り付けモーダル
+   一括貼り付け（種別タグ対応）
    ===================================================== */
-function parseLines(text){
-  return text.split('\n').map(line=>
-    line
-      .replace(/^[\s]*[-・*•‐–—]\s*(\[\s*[x ✓]\s*\])?\s*/u,'')
-      .replace(/^[\s]*(\[\s*[x ✓ ]\s*\]|□|☐|☑|✓|✔)\s*/u,'')
-      .replace(/^[\s]*[①②③④⑤⑥⑦⑧⑨⑩]\s*/u,'')
-      .replace(/^[\s]*\d+[.)]\s*/u,'')
-      .trim()
-  ).filter(l=>l.length>0);
+function stripBullet(s){
+  return s
+    .replace(/^[\s]*[-・*•‐–—]\s*(\[\s*[x ✓]\s*\])?\s*/u,'')
+    .replace(/^[\s]*(\[\s*[x ✓ ]\s*\]|□|☐|☑|✓|✔)\s*/u,'')
+    .replace(/^[\s]*[①②③④⑤⑥⑦⑧⑨⑩]\s*/u,'')
+    .replace(/^[\s]*\d+[.)。）]\s*/u,'')
+    .trim();
 }
-
-function parseBulkLines(text){
-  return text.split('\n').map(l=>{
-    let s=l.trim();
-    if(!s) return null;
-    // 先に箇条書き記号・番号・チェックボックスを除去
-    s=s.replace(/^(-\s*\[[ xX]\]\s*|-\s*\[\s*\]\s*|[\-\*・•]\s*|[①②③④⑤⑥⑦⑧⑨⑩]\s*|\d+[\.。\)）]\s*|[□☐]\s*)/,'').trim();
-    // [カテゴリ名] プレフィックスを抽出
-    let catHint=null;
+// 戻り値: { items:[{text,catHint,freq,date}], sawSection:bool }
+function parseBulkV3(text){
+  let curFreq=null, curCat=null, curDate=null, sawSection=false;
+  const items=[];
+  text.split('\n').forEach(raw=>{
+    let s=stripBullet(raw);
+    if(!s) return;
     const cm=s.match(/^\[([^\]]+)\]\s*/);
-    if(cm){ catHint=cm[1].trim(); s=s.slice(cm[0].length).trim(); }
-    if(!s) return null;
-    return { text:s, catHint };
-  }).filter(Boolean);
+    if(cm){
+      const inner=cm[1].trim();
+      const rest=s.slice(cm[0].length).trim();
+      // 種別タグ判定（"今日だけ 6/20" 形式も許容）
+      const headWord=inner.split(/\s+/)[0];
+      if(SECTION_TAGS[headWord]){
+        curFreq=SECTION_TAGS[headWord]; sawSection=true;
+        curDate=curFreq==='today' ? (parseShortDate(inner)||null) : null;
+        if(rest){ items.push({ text:rest, catHint:curCat, freq:curFreq, date:curDate }); }
+        return;
+      }
+      // カテゴリタグ
+      if(!rest){ curCat=inner; return; }       // 単独行 → 以降のカテゴリ
+      items.push({ text:rest, catHint:inner, freq:curFreq, date:curDate });
+      return;
+    }
+    items.push({ text:s, catHint:curCat, freq:curFreq, date:curDate });
+  });
+  return { items, sawSection };
 }
-
 function findMatchedCat(hint){
   if(!hint) return null;
   return categories.find(c=>c.name===hint||c.name.includes(hint)||hint.includes(c.name))||null;
 }
+function defaultFreq(){
+  return FREQS.includes(appState.manageView) ? appState.manageView : 'daily';
+}
 
+let bulkParsed=[];
 function renderBulkPreview(){
-  const parsed=parseBulkLines(document.getElementById('bulkText').value);
+  const { items }=parseBulkV3(document.getElementById('bulkText').value);
+  bulkParsed=items;
   const preview=document.getElementById('bulkPreview');
   const newCatsEl=document.getElementById('bulkNewCats');
-  if(!parsed.length){ preview.innerHTML=''; newCatsEl.innerHTML=''; return; }
+  if(!items.length){ preview.innerHTML=''; newCatsEl.innerHTML=''; return; }
 
-  // 未知カテゴリ名を収集（重複なし、既存カテゴリ除く）
+  // 未知カテゴリ（予約語は除外）
   const unknownNames=[...new Set(
-    parsed.map(p=>p.catHint).filter(h=>h&&!findMatchedCat(h))
+    items.map(p=>p.catHint).filter(h=>h && !RESERVED_CAT_NAMES.includes(h) && !findMatchedCat(h))
   )];
-
-  // 新規カテゴリチップ表示
   if(unknownNames.length){
     newCatsEl.innerHTML=`<p class="bulk-new-cats-label">✨ 新しく作るカテゴリ（絵文字を変えられます）</p>`
       +`<div class="bulk-new-cats-list">`
       +unknownNames.map(name=>`<div class="bulk-new-cat-chip" data-newcat="${esc(name)}">
-        <input class="chip-emoji" id="newcatemoji_${esc(name)}" value="📌" maxlength="2" title="絵文字を変更">
-        <span>${esc(name)}</span>
-      </div>`).join('')
+        <input class="chip-emoji" data-emoji-for="${esc(name)}" value="📌" maxlength="2" title="絵文字を変更">
+        <span>${esc(name)}</span></div>`).join('')
       +`</div>`;
-  } else {
-    newCatsEl.innerHTML='';
-  }
+  } else { newCatsEl.innerHTML=''; }
 
-  const defaultCatId=categories[0]?.id||'';
-  preview.innerHTML=`<p class="bulk-preview-label">${parsed.length}件を追加します：</p>`+
-    parsed.map((item,i)=>{
-      const matchedCat=findMatchedCat(item.catHint);
-      // 未知カテゴリは __pending__NAME で仮識別
-      const selId=matchedCat?.id||(item.catHint&&!matchedCat?`__pending__${item.catHint}`:defaultCatId);
-      const pendingOpts=unknownNames.map(name=>
-        `<option value="__pending__${name}"${selId===`__pending__${name}`?' selected':''}>${name}（新規作成）</option>`
-      ).join('');
-      const opts=categories.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji||''} ${esc(c.name)}</option>`).join('')
-        +pendingOpts
-        +`<option value="__new__" style="color:var(--sage);font-weight:700">＋ 新しいカテゴリを作る</option>`;
+  const dFreq=defaultFreq();
+  const freqOpts=(sel)=>FREQS.map(f=>`<option value="${f}"${f===sel?' selected':''}>${FREQ_META[f].emoji}</option>`).join('');
+
+  preview.innerHTML=`<p class="bulk-preview-label">${items.length}件を追加します（種別・カテゴリを修正できます）：</p>`+
+    items.map((item,i)=>{
+      const itemFreq=item.freq||dFreq;
+      const matched=findMatchedCat(item.catHint);
+      const selId=matched?.id||(item.catHint&&!RESERVED_CAT_NAMES.includes(item.catHint)?`__pending__${item.catHint}`:(categories[0]?.id||''));
+      const pendingOpts=unknownNames.map(name=>`<option value="__pending__${name}"${selId===`__pending__${name}`?' selected':''}>${esc(name)}（新規）</option>`).join('');
+      const catOpts=categories.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji||''} ${esc(c.name)}</option>`).join('')
+        +pendingOpts+`<option value="__new__" style="color:var(--sage);font-weight:700">＋作成</option>`;
       return `<div class="bulk-preview-item">
         <span class="bulk-item-text" title="${esc(item.text)}">${esc(item.text)}</span>
-        <select class="bulk-item-cat" id="bpi_${i}">${opts}</select>
+        <select class="bulk-item-freq" id="bpf_${i}">${freqOpts(itemFreq)}</select>
+        <select class="bulk-item-cat" id="bpi_${i}">${catOpts}</select>
       </div>`;
     }).join('');
 
-  parsed.forEach((_,i)=>{
-    document.getElementById(`bpi_${i}`)?.addEventListener('change',e=>{
-      if(e.target.value==='__new__') openAddCatModalFromSelect(`bpi_${i}`);
-    });
+  items.forEach((_,i)=>{
+    document.getElementById(`bpi_${i}`)?.addEventListener('change',e=>{ if(e.target.value==='__new__') openAddCatModalFromSelect(`bpi_${i}`); });
   });
 }
 
@@ -915,38 +1105,49 @@ function openBulkModal(){
   document.getElementById('bulkText').value='';
   document.getElementById('bulkPreview').innerHTML='';
   document.getElementById('bulkNewCats').innerHTML='';
+  bulkParsed=[];
   document.getElementById('bulkOverlay').classList.remove('hidden');
   document.getElementById('bulkText').focus();
 }
 function closeBulkModal(){ document.getElementById('bulkOverlay').classList.add('hidden'); }
 
 function saveBulk(){
-  const parsed=parseBulkLines(document.getElementById('bulkText').value);
-  if(!parsed.length){ showToast('テキストを入力してください'); return; }
+  if(!bulkParsed.length){ showToast('テキストを入力してください'); return; }
 
-  // __pending__NAME のカテゴリを作成してIDマップを作る
+  // 新規カテゴリ作成
   const pendingMap={};
   document.querySelectorAll('#bulkNewCats .bulk-new-cat-chip').forEach(chip=>{
     const name=chip.dataset.newcat;
     const emoji=chip.querySelector('.chip-emoji')?.value?.trim()||'📌';
-    const newCat={ id:genId(), name, emoji, color:PRESET_COLORS[0].value };
+    const newCat={ id:genId(), name, emoji, color:PRESET_COLORS[0].value, soft:PRESET_COLORS[0].soft };
     categories.push(newCat);
     pendingMap[`__pending__${name}`]=newCat.id;
   });
-  if(Object.keys(pendingMap).length){ saveCategories(categories); }
+  if(Object.keys(pendingMap).length) saveCategories(categories);
 
-  const items=loadItems(appState.view);
+  const dFreq=defaultFreq();
   const defaultCatId=categories[0]?.id||'';
-  parsed.forEach((item,i)=>{
-    const sel=document.getElementById(`bpi_${i}`);
-    const raw=sel?.value||'';
-    const catId=pendingMap[raw]||(raw&&raw!=='__new__'?raw:defaultCatId);
-    items.push({ id:genId(), main:item.text, time:'anytime', categoryId:catId });
+  const buckets={ today:[], daily:[], weekly:[], monthly:[] };
+  const t=getToday();
+
+  bulkParsed.forEach((item,i)=>{
+    const freq=(document.getElementById(`bpf_${i}`)?.value)||item.freq||dFreq;
+    const rawCat=document.getElementById(`bpi_${i}`)?.value||'';
+    const catId=pendingMap[rawCat]||(rawCat&&rawCat!=='__new__'&&!rawCat.startsWith('__pending__')?rawCat:defaultCatId);
+    if(freq==='today'){
+      buckets.today.push({ id:genId(), main:item.text, categoryId:catId, targetDate:item.date||t.dateKey, completed:false });
+    } else {
+      buckets[freq].push({ id:genId(), main:item.text, time:'anytime', categoryId:catId });
+    }
   });
-  saveItems(appState.view, items);
+
+  let added=0;
+  FREQS.forEach(f=>{
+    if(buckets[f].length){ saveItems(f, loadItems(f).concat(buckets[f])); added+=buckets[f].length; }
+  });
   closeBulkModal();
   render();
-  showToast(`${parsed.length}件追加しました`);
+  showToast(`${added}件追加しました`);
 }
 
 function copyText(text){
@@ -964,7 +1165,6 @@ function fallbackCopy(text){
 }
 
 document.getElementById('bulkText').addEventListener('input', renderBulkPreview);
-document.getElementById('bulkAdd').addEventListener('click', openBulkModal);
 document.getElementById('bulkCancel').addEventListener('click', closeBulkModal);
 document.getElementById('bulkSave').addEventListener('click', saveBulk);
 document.getElementById('bulkOverlay').addEventListener('click', e=>{ if(e.target===document.getElementById('bulkOverlay')) closeBulkModal(); });
@@ -975,16 +1175,14 @@ document.getElementById('copyPromptBtn').addEventListener('click', ()=>copyText(
    ===================================================== */
 let editingCatId=null;
 let selectedColor=PRESET_COLORS[0].value;
-let returnToSelect=null; // 新規カテゴリ作成後に値を戻すselectのID
+let returnToSelect=null;
 
 function buildColorPicker(){
   const picker=document.getElementById('colorPicker');
   picker.innerHTML=PRESET_COLORS.map(c=>`
     <div class="color-swatch${selectedColor===c.value?' selected':''}"
-      style="background:${c.value}"
-      data-color="${c.value}" data-soft="${c.soft}"
-      title="${c.name}" role="button" tabindex="0"></div>
-  `).join('');
+      style="background:${c.value}" data-color="${c.value}" data-soft="${c.soft}"
+      title="${c.name}" role="button" tabindex="0"></div>`).join('');
   picker.querySelectorAll('.color-swatch').forEach(s=>{
     s.addEventListener('click',()=>{
       selectedColor=s.dataset.color;
@@ -993,12 +1191,7 @@ function buildColorPicker(){
     });
   });
 }
-
-function openAddCatModalFromSelect(selectId){
-  returnToSelect=selectId;
-  openAddCatModal();
-}
-
+function openAddCatModalFromSelect(selectId){ returnToSelect=selectId; openAddCatModal(); }
 function openAddCatModal(){
   editingCatId=null; selectedColor=PRESET_COLORS[0].value;
   document.getElementById('catModalTitle').textContent='＋ カテゴリを追加';
@@ -1010,10 +1203,8 @@ function openAddCatModal(){
   document.getElementById('catOverlay').classList.remove('hidden');
   document.getElementById('catName').focus();
 }
-
 function openEditCatModal(id){
-  const cat=getCat(id);
-  if(!cat) return;
+  const cat=getCat(id); if(!cat) return;
   editingCatId=id; selectedColor=cat.color||PRESET_COLORS[0].value;
   document.getElementById('catModalTitle').textContent='✏️ カテゴリを編集';
   document.getElementById('catName').value=cat.name;
@@ -1024,12 +1215,15 @@ function openEditCatModal(id){
   document.getElementById('catOverlay').classList.remove('hidden');
   document.getElementById('catName').focus();
 }
-
 function closeCatModal(){ document.getElementById('catOverlay').classList.add('hidden'); editingCatId=null; returnToSelect=null; }
 
 function saveCat(){
   const name=document.getElementById('catName').value.trim();
   if(!name){ document.getElementById('catName').focus(); return; }
+  if(RESERVED_CAT_NAMES.includes(name)){
+    alert(`「${name}」はまとめて追加の種別タグに使われている予約語のため、カテゴリ名にできません。別の名前にしてください。`);
+    document.getElementById('catName').focus(); return;
+  }
   const emoji=document.getElementById('catEmoji').value.trim();
   const colorObj=PRESET_COLORS.find(c=>c.value===selectedColor)||PRESET_COLORS[0];
 
@@ -1044,26 +1238,24 @@ function saveCat(){
     const newId = editingCatId ? editingCatId : categories[categories.length-1].id;
     const selectEl = document.getElementById(returnToSelect);
     closeCatModal();
-    returnToSelect=null;
     if(selectEl){ populateCategorySelect(selectEl, newId); }
+    // bulkプレビューを開いていれば再描画
+    if(!document.getElementById('bulkOverlay').classList.contains('hidden')) renderBulkPreview();
   } else {
     closeCatModal();
     render();
   }
 }
-
 function deleteCat(){
   if(!editingCatId) return;
-  const affected=['daily','weekly','monthly'].reduce((sum,f)=>sum+loadItems(f).filter(i=>i.categoryId===editingCatId).length,0);
+  const affected=FREQS.reduce((s,f)=>s+loadItems(f).filter(i=>i.categoryId===editingCatId).length,0);
   const msg=affected>0
     ? `このカテゴリには${affected}件のTodoがあります。削除すると一緒に削除されます。よろしいですか？`
     : 'このカテゴリを削除しますか？';
   if(!confirm(msg)) return;
   categories=categories.filter(c=>c.id!==editingCatId);
   saveCategories(categories);
-  for(const f of ['daily','weekly','monthly']){
-    saveItems(f, loadItems(f).filter(i=>i.categoryId!==editingCatId));
-  }
+  FREQS.forEach(f=>saveItems(f, loadItems(f).filter(i=>i.categoryId!==editingCatId)));
   closeCatModal();
   render();
 }
@@ -1088,7 +1280,6 @@ function openTrashSettings(){
   }).join('');
   document.getElementById('trashOverlay').classList.remove('hidden');
 }
-
 function saveTrashSettings(){
   const CLS_MAP={燃やすごみ:'coral',缶:'sky','缶・びん':'sky','缶・びん・ペットボトル':'sky',段ボール:'amber',古紙:'amber',プラスチック:'sage',プラ:'sage'};
   const newSched={};
@@ -1096,15 +1287,13 @@ function saveTrashSettings(){
     const val=(document.getElementById(`trash_${i}`)?.value||'').trim();
     if(!val){ newSched[i]=null; continue; }
     const clsEntry=Object.entries(CLS_MAP).find(([k])=>val.includes(k));
-    const mark=val.slice(0,3);
-    newSched[i]={ label:val, mark, cls:clsEntry?clsEntry[1]:'sage' };
+    newSched[i]={ label:val, mark:val.slice(0,3), cls:clsEntry?clsEntry[1]:'sage' };
   }
   trashSchedule=newSched;
   saveTrashSchedule(trashSchedule);
   document.getElementById('trashOverlay').classList.add('hidden');
-  renderTrash();
+  render();
 }
-
 document.getElementById('trashCancel').addEventListener('click',()=>document.getElementById('trashOverlay').classList.add('hidden'));
 document.getElementById('trashSave').addEventListener('click', saveTrashSettings);
 document.getElementById('trashOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('trashOverlay')) document.getElementById('trashOverlay').classList.add('hidden'); });
@@ -1122,23 +1311,16 @@ function showToast(msg){
 }
 
 /* =====================================================
-   その他ボタン
+   その他
    ===================================================== */
 function resetCurrentView(){
-  const label=appState.view==='daily'?'今日':appState.view==='weekly'?'今週':'今月';
+  const v=appState.manageView;
+  if(!FREQS.includes(v)||v==='today') return;
+  const label=v==='daily'?'今日':v==='weekly'?'今週':'今月';
   if(!confirm(`${label}のチェックをリセットしますか？`)) return;
-  localStorage.removeItem(stateKey(appState.view));
+  localStorage.removeItem(stateKey(v));
+  showToast('チェックをリセットしました');
   render();
-}
-
-function setupTabs(){
-  document.querySelectorAll('.tab').forEach(tab=>{
-    tab.addEventListener('click',()=>{
-      appState.view=tab.dataset.view;
-      document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',String(t===tab)));
-      render();
-    });
-  });
 }
 
 function setupInstallPrompt(){
@@ -1152,13 +1334,14 @@ function setupInstallPrompt(){
 }
 
 document.getElementById('refreshToday').addEventListener('click', render);
-document.getElementById('hideDone').addEventListener('click',()=>{ appState.hideDone=!appState.hideDone; render(); });
-document.getElementById('resetVisible').addEventListener('click', resetCurrentView);
+document.getElementById('navHome').addEventListener('click', ()=>setPage('home'));
+document.getElementById('navManage').addEventListener('click', ()=>setPage('manage'));
+document.querySelectorAll('.mtab').forEach(t=>t.addEventListener('click',()=>setManageView(t.dataset.mview)));
 
 /* =====================================================
    起動
    ===================================================== */
-setupTabs(); setupInstallPrompt();
+setupInstallPrompt();
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 setInterval(()=>{ if(getToday().dateKey!==appState.todayKey) render(); },60000);
 render();
