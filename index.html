@@ -42,6 +42,8 @@ button,input,textarea,select{ font:inherit; }
 .eyebrow{ margin:0 0 4px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.18em; font-family:'Zen Maru Gothic',sans-serif; }
 h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-weight:900; line-height:1.25; }
 .subtitle{ margin:6px 0 0; color:var(--muted); font-size:12px; line-height:1.6; }
+.tagline{ color:var(--sage); font-weight:700; font-family:'Zen Maru Gothic',sans-serif; margin-top:5px; }
+.tagline + .subtitle{ margin-top:2px; }
 
 /* ── 肉球メーター ── */
 .meter{ width:96px; min-width:96px; aspect-ratio:1; position:relative; }
@@ -248,7 +250,16 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 
 /* ── manage list rows ── */
 .cat-add-row{ margin:4px 0 14px; }
+.ai-hint{ margin:-6px 0 14px; padding:10px 12px; background:var(--sky-soft); border:1px solid var(--sky); border-radius:10px; color:var(--ink); font-size:12px; line-height:1.6; }
 .empty{ margin:20px 0; padding:28px 16px; border:1px dashed var(--line); border-radius:14px; color:var(--muted); text-align:center; background:rgba(255,255,255,.5); font-size:14px; line-height:1.7; }
+.welcome{ margin:18px 0; padding:24px 20px; border:1px solid var(--line); border-radius:18px; background:var(--panel); box-shadow:var(--shadow); text-align:center; }
+.welcome-title{ margin:0; font-family:'Zen Maru Gothic',sans-serif; font-size:18px; font-weight:900; }
+.welcome-lead{ margin:8px 0 0; color:var(--muted); font-size:13px; line-height:1.7; }
+.welcome-steps{ list-style:none; margin:18px 0; padding:0; display:flex; flex-direction:column; gap:12px; text-align:left; }
+.welcome-steps li{ display:flex; align-items:center; gap:12px; font-size:14px; line-height:1.5; }
+.welcome-steps .ws-num{ flex-shrink:0; width:28px; height:28px; border-radius:999px; background:var(--sage); color:#fff; display:grid; place-items:center; font-weight:900; font-family:'Zen Maru Gothic',sans-serif; }
+.welcome-steps strong{ color:var(--sage); }
+.welcome .empty-btn{ margin-top:4px; }
 .empty-btn{ display:inline-block; margin-top:10px; background:var(--sage); color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:14px; font-weight:700; cursor:pointer; font-family:'Zen Maru Gothic',sans-serif; }
 .footer{ margin-top:22px; color:var(--muted); text-align:center; font-size:11px; line-height:1.7; }
 .hidden{ display:none !important; }
@@ -270,8 +281,9 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
   <div id="homePage">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TODAY'S LIST</p>
+        <p class="eyebrow">ぽんずTodo</p>
         <h1 id="dateDisplay">今日のチェック</h1>
+        <p class="subtitle tagline">考えるのはAI。やるのはあなた。</p>
         <p class="subtitle" id="subtitle">毎日のことを、少しずつ。</p>
       </div>
       <div class="meter" id="meterWrap" aria-label="今日の進み具合">
@@ -368,7 +380,15 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 <!-- 一括貼り付けモーダル -->
 <div class="modal-overlay hidden" id="bulkOverlay" role="dialog" aria-modal="true">
   <div class="modal">
-    <h3>📋 まとめて追加</h3>
+    <h3>📋 AIリストを追加</h3>
+    <details class="ai-accordion">
+      <summary>🤖 AIにお願いする例を見る</summary>
+      <div class="ai-accordion-body">
+        <p class="hint-text">ChatGPTやClaudeなどのAIチャットに下のプロンプトを貼って使ってください。返ってきたリストをそのまま下のテキストエリアに貼り付けると、種別・カテゴリ・時間帯を自動認識します。</p>
+        <button class="copy-prompt-btn" id="copyPromptBtn">📋 プロンプトをコピー</button>
+        <div class="prompt-box" id="aiPromptBox"></div>
+      </div>
+    </details>
     <div>
       <p class="hint-text">1行に1つのタスク。箇条書き記号（-・*）や番号は自動で除去されます。<br>
         行頭に <code>[今日だけ]</code> <code>[毎日]</code> <code>[週]</code> <code>[月]</code> を書くと、以降の行がその種別に振り分けられます。<code>[家事]</code> のようなカテゴリ名、毎日タスクの <code>[朝]</code> <code>[昼休み]</code> などの時間帯も自動認識します。</p>
@@ -379,14 +399,6 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
     </div>
     <div id="bulkNewCats" class="bulk-new-cats"></div>
     <div id="bulkPreview" class="bulk-preview"></div>
-    <details class="ai-accordion">
-      <summary>🤖 AIに頼むときはこう聞いてみて</summary>
-      <div class="ai-accordion-body">
-        <p class="hint-text">ChatGPTやClaudeなどのAIチャットに貼って使ってください。返ってきたリストをそのまま上のテキストエリアに貼り付けると、種別とカテゴリを自動認識します。</p>
-        <button class="copy-prompt-btn" id="copyPromptBtn">📋 プロンプトをコピー</button>
-        <div class="prompt-box" id="aiPromptBox"></div>
-      </div>
-    </details>
     <div class="modal-actions">
       <button class="modal-btn cancel" id="bulkCancel">キャンセル</button>
       <button class="modal-btn save" id="bulkSave">追加する</button>
@@ -494,15 +506,13 @@ const FREQ_META = {
 };
 
 const AI_PROMPT = `今日やること・今週やること・今月やることを整理してリストアップして。
+
 条件：
 ・1行に1つのタスクだけ書く
-・余計な説明や前置きは書かず、リストだけ出力する
-・「-」から始める形式で書く
-・タスクの種別ごとに見出しをつける。見出しは [今日だけ]［毎日］［週］［月］ のいずれかを使う
-・できれば見出しの下にカテゴリ名も [家事] のように書く
-・「毎日」のタスクは、やる時間帯ごとに [朝][昼休み][仕事中][仕事終わり] の見出しもつける
-
-タスクの内容：（ここに状況や相談したいことを書く）`;
+・「-」から始める
+・見出しは [今日だけ][毎日][週][月] を使う
+・カテゴリは [家事] のように記載する
+・毎日は [朝][昼休み][仕事中][仕事終わり] も付ける`;
 document.getElementById('aiPromptBox').textContent = AI_PROMPT;
 
 /* =====================================================
@@ -777,7 +787,22 @@ function renderHome(){
   }
 
   if(!html){
-    html=`<div class="empty">今日のタスクはまだありません。<br>下の「⚙️ 管理」からタスクを追加しましょう🐾<br><button class="empty-btn" id="goManageBtn">⚙️ 管理ページへ</button></div>`;
+    const totalTodos=FREQS.reduce((s,f)=>s+loadItems(f).length,0);
+    if(totalTodos===0){
+      // 初回・全削除直後・Todo0件 → ウェルカムカード
+      html=`<div class="welcome">
+        <h2 class="welcome-title">🐾 AIと一緒にTodoを作ろう</h2>
+        <p class="welcome-lead">AIで整理したリストを、コピペだけで登録できるTodoアプリ。</p>
+        <ol class="welcome-steps">
+          <li><span class="ws-num">1</span><span>ChatGPTやClaudeで<br>やることを整理する</span></li>
+          <li><span class="ws-num">2</span><span><strong>📋 AIリストを追加</strong> に貼り付ける</span></li>
+          <li><span class="ws-num">3</span><span>自動でカテゴリ分けして登録！</span></li>
+        </ol>
+        <button class="empty-btn" id="welcomeOpenBulk">📋 AIリストを追加を開く</button>
+      </div>`;
+    } else {
+      html=`<div class="empty">今日のタスクはありません。<br>ゆっくり休んでね🐾<br><button class="empty-btn" id="goManageBtn">⚙️ 管理へ</button></div>`;
+    }
   }
   c.innerHTML=html;
 
@@ -805,6 +830,8 @@ function renderHome(){
   });
   const gm=document.getElementById('goManageBtn');
   if(gm) gm.addEventListener('click',()=>setPage('manage'));
+  const wb=document.getElementById('welcomeOpenBulk');
+  if(wb) wb.addEventListener('click',()=>{ setPage('manage'); openBulkModal(); });
 }
 
 /* =====================================================
@@ -820,13 +847,14 @@ function renderManage(){
   const resetBtn = v!=='today' ? `<button class="text-btn" id="mgReset">チェックをリセット</button>` : '';
   let html=`<div class="manage-actions">
     <button class="add-btn" id="mgAdd">＋ 個別追加</button>
-    <button class="bulk-btn" id="mgBulk">📋 まとめて追加</button>
+    <button class="bulk-btn" id="mgBulk">📋 AIリストを追加</button>
     ${resetBtn}
-  </div>`;
+  </div>
+  <p class="ai-hint">💡 ChatGPTやClaudeで作ったリストを貼り付けると、カテゴリや時間帯ごとにまとめて登録できます。</p>`;
 
   const items=loadItems(v);
   if(!items.length){
-    html+=`<div class="empty">${FREQ_META[v].label}のタスクはまだありません。</div>`;
+    html+=`<div class="empty">📋 AIで作ったリストを貼り付けて、まとめて登録できます。<br><button class="empty-btn" id="mgBulkEmpty">📋 AIリストを追加</button></div>`;
     c.innerHTML=html; bindManageItems(c); return;
   }
   html+=buildManageItemList(v, items);
@@ -876,6 +904,7 @@ function bindManageItems(c){
   const bulk=document.getElementById('mgBulk'); if(bulk) bulk.addEventListener('click',openBulkModal);
   const reset=document.getElementById('mgReset'); if(reset) reset.addEventListener('click',resetCurrentView);
   const addCat=document.getElementById('mgAddCat'); if(addCat) addCat.addEventListener('click',openAddCatModal);
+  const bulkE=document.getElementById('mgBulkEmpty'); if(bulkE) bulkE.addEventListener('click',openBulkModal);
   c.querySelectorAll('.edit-btn[data-edit-id]').forEach(b=>b.addEventListener('click',()=>openEditModal(b.dataset.editId, b.dataset.editFreq)));
   c.querySelectorAll('.edit-btn[data-cat-id]').forEach(b=>b.addEventListener('click',()=>openEditCatModal(b.dataset.catId)));
 }
