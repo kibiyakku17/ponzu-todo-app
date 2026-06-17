@@ -814,11 +814,6 @@ function renderManage(){
     ${resetBtn}
   </div>`;
 
-  if(categories.length===0){
-    html+=`<div class="empty">先にカテゴリを作りましょう。<br><button class="empty-btn" id="mgAddCat">＋ カテゴリを追加</button></div>`;
-    c.innerHTML=html; bindManageItems(c); return;
-  }
-
   const items=loadItems(v);
   if(!items.length){
     html+=`<div class="empty">${FREQ_META[v].label}のタスクはまだありません。</div>`;
@@ -932,7 +927,6 @@ function toggleEditFields(freq){
 
 function openAddModal(freq){
   if(freq==='cats'||freq==='trash') freq='daily';
-  if(categories.length===0){ openAddCatModal(); return; }
   isAddMode=true; editingId=null; editingFreq=freq;
   document.getElementById('editTitle').textContent=`＋ ${FREQ_META[freq].label}に追加`;
   document.getElementById('editMain').value='';
@@ -1006,8 +1000,7 @@ document.getElementById('editCategory').addEventListener('change', e=>{ if(e.tar
 document.getElementById('editCancel').addEventListener('click', closeEditModal);
 document.getElementById('editSave').addEventListener('click', saveEdit);
 document.getElementById('editDelete').addEventListener('click', deleteItem);
-document.getElementById('editOverlay').addEventListener('click', e=>{ if(e.target===document.getElementById('editOverlay')) closeEditModal(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeEditModal(); closeBulkModal(); closeCatModal(); } });
+// 背景タップでは閉じない（入力中の誤操作で内容が消えるのを防ぐ）
 
 /* =====================================================
    一括貼り付け（種別タグ対応）
@@ -1101,7 +1094,6 @@ function renderBulkPreview(){
 }
 
 function openBulkModal(){
-  if(categories.length===0){ openAddCatModal(); return; }
   document.getElementById('bulkText').value='';
   document.getElementById('bulkPreview').innerHTML='';
   document.getElementById('bulkNewCats').innerHTML='';
@@ -1167,7 +1159,6 @@ function fallbackCopy(text){
 document.getElementById('bulkText').addEventListener('input', renderBulkPreview);
 document.getElementById('bulkCancel').addEventListener('click', closeBulkModal);
 document.getElementById('bulkSave').addEventListener('click', saveBulk);
-document.getElementById('bulkOverlay').addEventListener('click', e=>{ if(e.target===document.getElementById('bulkOverlay')) closeBulkModal(); });
 document.getElementById('copyPromptBtn').addEventListener('click', ()=>copyText(AI_PROMPT));
 
 /* =====================================================
@@ -1263,7 +1254,6 @@ function deleteCat(){
 document.getElementById('catCancel').addEventListener('click', closeCatModal);
 document.getElementById('catSave').addEventListener('click', saveCat);
 document.getElementById('catDelete').addEventListener('click', deleteCat);
-document.getElementById('catOverlay').addEventListener('click', e=>{ if(e.target===document.getElementById('catOverlay')) closeCatModal(); });
 
 /* =====================================================
    ごみ出し設定
