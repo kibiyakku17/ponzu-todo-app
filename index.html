@@ -229,7 +229,7 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .bulk-item-freq,.bulk-item-time,.bulk-item-cat{ flex:1 1 auto; min-width:0; font-size:12px; border:1px solid var(--line); border-radius:6px; padding:4px 5px; background:var(--bg); color:var(--ink); }
 .bulk-item-freq{ flex:0 0 auto; }
 .bulk-item-time:disabled{ opacity:.4; }
-.ai-accordion{ border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.ai-accordion{ border:1px solid var(--line); border-radius:10px; overflow:hidden; flex-shrink:0; }
 .ai-accordion summary{
   padding:10px 14px; cursor:pointer; font-size:13px; font-weight:700;
   color:var(--muted); background:var(--soft); list-style:none;
@@ -470,7 +470,7 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
   <div class="modal">
     <h3>🤖 ごみ出しをAIで設定</h3>
     <details class="ai-accordion">
-      <summary>🤖 AIにお願いする例を見る</summary>
+      <summary>🤖 AIにお願いする例（プロンプト）を見る</summary>
       <div class="ai-accordion-body">
         <p class="hint-text">ChatGPTやClaudeに下のプロンプトを貼り、地域名を書いて聞いてください。返ってきた回答を下のテキストエリアに貼り付けると、曜日ごとに自動で振り分けます。</p>
         <button class="copy-prompt-btn" id="copyTrashPromptBtn">📋 プロンプトをコピー</button>
@@ -1488,7 +1488,8 @@ function openTrashAiModal(){
   document.getElementById('trashAiPreview').innerHTML='';
   renderTrashAiPreview();
   document.getElementById('trashAiOverlay').classList.remove('hidden');
-  document.getElementById('trashAiText').focus();
+  // テキストエリアに自動フォーカスしない（先頭のプロンプト例を見せるため）
+  document.querySelector('#trashAiOverlay .modal').scrollTop=0;
 }
 function closeTrashAiModal(){ document.getElementById('trashAiOverlay').classList.add('hidden'); }
 function saveTrashAi(){
