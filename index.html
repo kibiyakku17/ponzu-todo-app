@@ -200,7 +200,7 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
   outline:none; resize:none; transition:border-color .15s;
 }
 .modal-field input:focus,.modal-field textarea:focus,.modal-field select:focus{ border-color:var(--sage); }
-.modal-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.modal-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; position:sticky; bottom:0; background:var(--panel); padding-top:10px; margin-top:4px; z-index:1; }
 .modal-actions.has-delete{ grid-template-columns:auto 1fr 1fr; }
 .modal-btn{ border:none; border-radius:12px; padding:12px; font-size:14px; font-weight:700; cursor:pointer; }
 .modal-btn.cancel{ background:var(--soft); color:var(--muted); }
@@ -217,6 +217,12 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .bulk-textarea:focus{ border-color:var(--sage); }
 .hint-text{ font-size:12px; color:var(--muted); line-height:1.6; margin:0; }
 .hint-text code{ background:var(--soft); border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:11px; }
+.bulk-new-cats:not(:empty){ background:var(--lavender-soft,#ede9f5); border:1px solid var(--lavender,#b39ddb); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+.bulk-new-cats-label{ font-size:12px; font-weight:700; color:var(--muted); margin:0; }
+.bulk-new-cats-list{ display:flex; flex-wrap:wrap; gap:6px; }
+.bulk-new-cat-chip{ display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--lavender,#b39ddb); border-radius:20px; padding:4px 10px; font-size:12px; }
+.bulk-new-cat-chip input.chip-emoji{ width:28px; border:none; background:transparent; font-size:14px; text-align:center; outline:none; padding:0; }
+.bulk-new-cat-chip span{ color:var(--ink); font-weight:600; }
 .bulk-preview{ display:flex; flex-direction:column; gap:6px; }
 .bulk-preview:empty{ display:none; }
 .bulk-preview-label{ font-size:12px; color:var(--muted); font-weight:600; padding:2px 0; }
@@ -349,11 +355,13 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
       <label for="bulkText">タスクを貼り付け</label>
       <textarea class="bulk-textarea" id="bulkText" placeholder="例：&#10;- [仕事] 資料作成&#10;- [家事] 洗濯&#10;- 歯医者の予約"></textarea>
     </div>
+    <div id="bulkNewCats" class="bulk-new-cats"></div>
     <div id="bulkPreview" class="bulk-preview"></div>
     <details class="ai-accordion">
       <summary>🤖 AIに頼むときはこう聞いてみて</summary>
       <div class="ai-accordion-body">
-        <p class="hint-text">ChatGPTやClaudeなどのAIチャットに下のプロンプトを貼って、相談したいことを伝えると、リスト形式で返してくれます。その回答をコピーして、上のテキストエリアに貼り付けてください。</p>
+        <p class="hint-text">ChatGPTやClaudeなどのAIチャットに貼って使ってください。返ってきたリストをそのまま上のテキストエリアに貼り付けると <code>[カテゴリ名]</code> も自動認識します。</p>
+        <button class="copy-prompt-btn" id="copyPromptBtn">📋 プロンプトをコピー</button>
         <div class="prompt-box" id="aiPromptBox">今日やることを箇条書きでリストアップして。
 条件：
 ・1行に1つのタスクだけ書く
@@ -362,7 +370,6 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 ・「-」から始める形式で書いて
 
 タスクの内容：（ここに状況や相談したいことを書く）</div>
-        <button class="copy-prompt-btn" id="copyPromptBtn">📋 プロンプトをコピー</button>
       </div>
     </details>
     <div class="modal-actions">
@@ -849,25 +856,53 @@ function parseBulkLines(text){
   }).filter(Boolean);
 }
 
+function findMatchedCat(hint){
+  if(!hint) return null;
+  return categories.find(c=>c.name===hint||c.name.includes(hint)||hint.includes(c.name))||null;
+}
+
 function renderBulkPreview(){
   const parsed=parseBulkLines(document.getElementById('bulkText').value);
   const preview=document.getElementById('bulkPreview');
-  if(!parsed.length){ preview.innerHTML=''; return; }
+  const newCatsEl=document.getElementById('bulkNewCats');
+  if(!parsed.length){ preview.innerHTML=''; newCatsEl.innerHTML=''; return; }
+
+  // 未知カテゴリ名を収集（重複なし、既存カテゴリ除く）
+  const unknownNames=[...new Set(
+    parsed.map(p=>p.catHint).filter(h=>h&&!findMatchedCat(h))
+  )];
+
+  // 新規カテゴリチップ表示
+  if(unknownNames.length){
+    newCatsEl.innerHTML=`<p class="bulk-new-cats-label">✨ 新しく作るカテゴリ（絵文字を変えられます）</p>`
+      +`<div class="bulk-new-cats-list">`
+      +unknownNames.map(name=>`<div class="bulk-new-cat-chip" data-newcat="${esc(name)}">
+        <input class="chip-emoji" id="newcatemoji_${esc(name)}" value="📌" maxlength="2" title="絵文字を変更">
+        <span>${esc(name)}</span>
+      </div>`).join('')
+      +`</div>`;
+  } else {
+    newCatsEl.innerHTML='';
+  }
+
   const defaultCatId=categories[0]?.id||'';
   preview.innerHTML=`<p class="bulk-preview-label">${parsed.length}件を追加します：</p>`+
     parsed.map((item,i)=>{
-      const matchedCat=item.catHint
-        ? categories.find(c=>c.name===item.catHint||c.name.includes(item.catHint)||item.catHint.includes(c.name))
-        : null;
-      const selId=matchedCat?.id||defaultCatId;
+      const matchedCat=findMatchedCat(item.catHint);
+      // 未知カテゴリは __pending__NAME で仮識別
+      const selId=matchedCat?.id||(item.catHint&&!matchedCat?`__pending__${item.catHint}`:defaultCatId);
+      const pendingOpts=unknownNames.map(name=>
+        `<option value="__pending__${name}"${selId===`__pending__${name}`?' selected':''}>${name}（新規作成）</option>`
+      ).join('');
       const opts=categories.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji||''} ${esc(c.name)}</option>`).join('')
+        +pendingOpts
         +`<option value="__new__" style="color:var(--sage);font-weight:700">＋ 新しいカテゴリを作る</option>`;
       return `<div class="bulk-preview-item">
         <span class="bulk-item-text" title="${esc(item.text)}">${esc(item.text)}</span>
         <select class="bulk-item-cat" id="bpi_${i}">${opts}</select>
       </div>`;
     }).join('');
-  // 各行のselectに__new__検知イベント
+
   parsed.forEach((_,i)=>{
     document.getElementById(`bpi_${i}`)?.addEventListener('change',e=>{
       if(e.target.value==='__new__') openAddCatModalFromSelect(`bpi_${i}`);
@@ -879,6 +914,7 @@ function openBulkModal(){
   if(categories.length===0){ openAddCatModal(); return; }
   document.getElementById('bulkText').value='';
   document.getElementById('bulkPreview').innerHTML='';
+  document.getElementById('bulkNewCats').innerHTML='';
   document.getElementById('bulkOverlay').classList.remove('hidden');
   document.getElementById('bulkText').focus();
 }
@@ -887,11 +923,24 @@ function closeBulkModal(){ document.getElementById('bulkOverlay').classList.add(
 function saveBulk(){
   const parsed=parseBulkLines(document.getElementById('bulkText').value);
   if(!parsed.length){ showToast('テキストを入力してください'); return; }
+
+  // __pending__NAME のカテゴリを作成してIDマップを作る
+  const pendingMap={};
+  document.querySelectorAll('#bulkNewCats .bulk-new-cat-chip').forEach(chip=>{
+    const name=chip.dataset.newcat;
+    const emoji=chip.querySelector('.chip-emoji')?.value?.trim()||'📌';
+    const newCat={ id:genId(), name, emoji, color:PRESET_COLORS[0].value };
+    categories.push(newCat);
+    pendingMap[`__pending__${name}`]=newCat.id;
+  });
+  if(Object.keys(pendingMap).length){ saveCategories(categories); }
+
   const items=loadItems(appState.view);
   const defaultCatId=categories[0]?.id||'';
   parsed.forEach((item,i)=>{
     const sel=document.getElementById(`bpi_${i}`);
-    const catId=(sel&&sel.value!=='__new__')?sel.value:defaultCatId;
+    const raw=sel?.value||'';
+    const catId=pendingMap[raw]||(raw&&raw!=='__new__'?raw:defaultCatId);
     items.push({ id:genId(), main:item.text, time:'anytime', categoryId:catId });
   });
   saveItems(appState.view, items);
