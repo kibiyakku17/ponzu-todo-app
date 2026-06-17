@@ -263,6 +263,17 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .empty-btn{ display:inline-block; margin-top:10px; background:var(--sage); color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:14px; font-weight:700; cursor:pointer; font-family:'Zen Maru Gothic',sans-serif; }
 .footer{ margin-top:22px; color:var(--muted); text-align:center; font-size:11px; line-height:1.7; }
 .hidden{ display:none !important; }
+
+/* ── 初回チュートリアル ── */
+.tut-overlay{ position:fixed; inset:0; z-index:400; background:rgba(48,50,45,.5); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:24px; }
+.tut-card{ position:relative; width:min(100%,360px); background:var(--panel); border-radius:22px; box-shadow:var(--shadow); padding:48px 26px 26px; text-align:center; }
+.tut-skip{ position:absolute; top:14px; right:14px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:13px; font-weight:700; padding:4px 8px; }
+.tut-emoji{ font-size:56px; line-height:1; margin-bottom:18px; }
+.tut-text{ margin:0 0 22px; font-family:'Zen Maru Gothic',sans-serif; font-size:18px; font-weight:700; line-height:1.6; min-height:3.2em; display:flex; align-items:center; justify-content:center; }
+.tut-dots{ display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
+.tut-dot{ width:8px; height:8px; border-radius:999px; background:var(--line); transition:background .2s,transform .2s; }
+.tut-dot.on{ background:var(--sage); transform:scale(1.25); }
+.tut-next{ width:100%; background:var(--sage); color:#fff; border:none; border-radius:14px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; font-family:'Zen Maru Gothic',sans-serif; }
 .color-picker{ display:flex; gap:8px; flex-wrap:wrap; }
 .color-swatch{ width:30px; height:30px; border-radius:999px; cursor:pointer; border:3px solid transparent; transition:transform .1s, border-color .1s; }
 .color-swatch.selected{ border-color:var(--ink); transform:scale(1.15); }
@@ -440,6 +451,17 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
       <button class="modal-btn cancel" id="trashCancel">キャンセル</button>
       <button class="modal-btn save" id="trashSave">保存</button>
     </div>
+  </div>
+</div>
+
+<!-- 初回チュートリアル -->
+<div class="tut-overlay hidden" id="tutOverlay" role="dialog" aria-modal="true">
+  <div class="tut-card">
+    <button class="tut-skip" id="tutSkip" type="button">スキップ</button>
+    <div class="tut-emoji" id="tutEmoji">🐶</div>
+    <p class="tut-text" id="tutText"></p>
+    <div class="tut-dots" id="tutDots"></div>
+    <button class="tut-next" id="tutNext" type="button">次へ</button>
   </div>
 </div>
 
@@ -1386,12 +1408,61 @@ document.getElementById('navManage').addEventListener('click', ()=>setPage('mana
 document.querySelectorAll('.mtab').forEach(t=>t.addEventListener('click',()=>setManageView(t.dataset.mview)));
 
 /* =====================================================
+   初回チュートリアル
+   ===================================================== */
+const TUTORIAL = [
+  { emoji:'🐶', text:'何をやるか考えるのが大変…' },
+  { emoji:'🤖', text:'ChatGPTやClaudeに相談！' },
+  { emoji:'📋', text:'コピペするだけでTodo完成！' },
+  { emoji:'🐾', text:'あとはチェックするだけ。' },
+];
+let tutIndex=0;
+function renderTut(){
+  const c=TUTORIAL[tutIndex];
+  document.getElementById('tutEmoji').textContent=c.emoji;
+  document.getElementById('tutText').textContent=c.text;
+  document.getElementById('tutDots').innerHTML=TUTORIAL.map((_,i)=>`<span class="tut-dot${i===tutIndex?' on':''}"></span>`).join('');
+  document.getElementById('tutNext').textContent = tutIndex===TUTORIAL.length-1 ? 'はじめる' : '次へ';
+}
+function nextTut(){
+  if(tutIndex<TUTORIAL.length-1){ tutIndex++; renderTut(); }
+  else closeTut();
+}
+function closeTut(){
+  document.getElementById('tutOverlay').classList.add('hidden');
+  localStorage.setItem('todo_tutorial_seen_v3','1');
+}
+function openTut(){
+  tutIndex=0; renderTut();
+  document.getElementById('tutOverlay').classList.remove('hidden');
+}
+document.getElementById('tutNext').addEventListener('click', nextTut);
+document.getElementById('tutSkip').addEventListener('click', closeTut);
+// カード本体タップでも送る（ボタン・スキップは除く）
+document.querySelector('.tut-card').addEventListener('click', e=>{
+  if(e.target.closest('.tut-next')||e.target.closest('.tut-skip')) return;
+  nextTut();
+});
+// スワイプで送る
+let tutTouchX=null;
+const tutCard=document.querySelector('.tut-card');
+tutCard.addEventListener('touchstart', e=>{ tutTouchX=e.changedTouches[0].clientX; });
+tutCard.addEventListener('touchend', e=>{
+  if(tutTouchX===null) return;
+  const dx=e.changedTouches[0].clientX-tutTouchX;
+  if(dx<-40) nextTut();
+  else if(dx>40 && tutIndex>0){ tutIndex--; renderTut(); }
+  tutTouchX=null;
+});
+
+/* =====================================================
    起動
    ===================================================== */
 setupInstallPrompt();
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 setInterval(()=>{ if(getToday().dateKey!==appState.todayKey) render(); },60000);
 render();
+if(!localStorage.getItem('todo_tutorial_seen_v3')) openTut();
 </script>
 </body>
 </html>
