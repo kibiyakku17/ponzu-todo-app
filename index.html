@@ -289,6 +289,11 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .color-swatch{ width:30px; height:30px; border-radius:999px; cursor:pointer; border:3px solid transparent; transition:transform .1s, border-color .1s; }
 .color-swatch.selected{ border-color:var(--ink); transform:scale(1.15); }
 
+.bulk-sched-badge{ display:inline-block; background:var(--sky-soft); color:var(--sky); border:1px solid var(--sky); border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700; white-space:nowrap; }
+.data-section{ margin:0 0 20px; }
+.data-section h4{ margin:0 0 8px; font-size:14px; font-weight:700; font-family:'Zen Maru Gothic',sans-serif; }
+.data-danger-btn{ background:var(--coral-soft); color:var(--coral); border:1px solid var(--coral); border-radius:10px; padding:10px 18px; font-size:14px; font-weight:700; cursor:pointer; }
+.data-danger-btn:hover{ background:var(--coral); color:#fff; }
 .sched-row{ display:flex; gap:8px; }
 .sched-row select{ flex:1; }
 .sched-week-row{ display:flex; align-items:center; gap:10px; padding:6px 0; flex-wrap:wrap; }
@@ -354,6 +359,7 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
       <button class="mtab" role="tab" data-mview="scheduled" aria-selected="false">🗓 スケジュール</button>
       <button class="mtab" role="tab" data-mview="cats"      aria-selected="false">🏷️ カテゴリ</button>
       <button class="mtab" role="tab" data-mview="trash"     aria-selected="false">🗑️ ごみ出し</button>
+      <button class="mtab" role="tab" data-mview="data"      aria-selected="false">⚙️ データ</button>
     </div>
     <main id="manageContent"></main>
     <footer class="footer">ここで作ったタスクが、ホームの今日のリストに表示されます。</footer>
@@ -446,17 +452,32 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
     </details>
     <div>
       <p class="hint-text">1行に1つのタスク。箇条書き記号（-・*）や番号は自動で除去されます。<br>
-        行頭に <code>[今日だけ]</code> <code>[毎日]</code> <code>[週]</code> <code>[月]</code> を書くと、以降の行がその種別に振り分けられます。<code>[家事]</code> のようなカテゴリ名、毎日タスクの <code>[朝]</code> <code>[昼休み]</code> などの時間帯も自動認識します。</p>
+        <code>[今日だけ]</code> <code>[毎日]</code> … 種別。<code>[家事]</code> … カテゴリ。<code>[朝]</code> <code>[昼休み]</code> … 時間帯（毎日のみ）。<br>
+        スケジュール: <code>[毎週 月]</code> <code>[毎週 土]</code> <code>[隔週 日 2 4]</code> <code>[月1 日 1]</code> など。<br>
+        2スペースインデントの行は直前タスクのメモとして取り込まれます。</p>
     </div>
     <div class="modal-field">
       <label for="bulkText">タスクを貼り付け</label>
-      <textarea class="bulk-textarea" id="bulkText" placeholder="例：&#10;[今日だけ]&#10;[家事]&#10;病院の予約電話をする&#10;&#10;[毎日]&#10;[朝]&#10;[健康]&#10;ストレッチをする"></textarea>
+      <textarea class="bulk-textarea" id="bulkText" placeholder="例：&#10;[家事]&#10;[毎日]&#10;[朝] ストレッチをする&#10;[毎週 月] 部屋全体に掃除機&#10;[隔週 日 2 4] フローリングを拭く&#10;[月1 日 1] シンク掃除&#10;&#10;[今日だけ]&#10;病院の予約電話をする"></textarea>
     </div>
     <div id="bulkNewCats" class="bulk-new-cats"></div>
     <div id="bulkPreview" class="bulk-preview"></div>
     <div class="modal-actions">
       <button class="modal-btn cancel" id="bulkCancel">キャンセル</button>
       <button class="modal-btn save" id="bulkSave">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- エクスポートモーダル -->
+<div class="modal-overlay hidden" id="exportOverlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3>📤 タスクを出力</h3>
+    <p class="hint-text">コピーしてAIに渡し、見直し後の結果を「AIリストを追加」で貼り戻せます。</p>
+    <textarea class="bulk-textarea" id="exportText" readonly style="min-height:220px;font-size:13px;line-height:1.6"></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="exportClose">閉じる</button>
+      <button class="modal-btn save" id="exportCopy">📋 コピー</button>
     </div>
   </div>
 </div>
@@ -595,9 +616,10 @@ const TIME_TAGS = {
   '仕事中':'work', '仕事終わり':'evening', '夕方':'evening', '夜':'evening',
   '時間未設定':'anytime',
 };
-// カテゴリ名に使えない予約語（種別タグ＋時間帯タグ）
+// カテゴリ名に使えない予約語（種別タグ＋時間帯タグ＋スケジュールタグ）
 const RESERVED_CAT_NAMES = ['今日だけ','今日','毎日','週','月','週次','月次',
-  '朝','昼','昼休み','仕事中','仕事終わり','夕方','夜','時間未設定'];
+  '朝','昼','昼休み','仕事中','仕事終わり','夕方','夜','時間未設定',
+  '毎週','隔週','月1'];
 
 const FREQ_META = {
   today:   { label:'📌 今日だけ', emoji:'📌' },
@@ -606,14 +628,32 @@ const FREQ_META = {
   monthly: { label:'🌙 月',      emoji:'🌙' },
 };
 
-const AI_PROMPT = `今日やること・今週やること・今月やることを整理してリストアップして。
+const AI_PROMPT = `やることリストを整理してください。以下のフォーマットで出力してください。
 
-条件：
-・1行に1つのタスクだけ書く
-・「-」から始める
-・見出しは [今日だけ][毎日][週][月] を使う
-・カテゴリは [家事] のように記載する
-・毎日は [朝][昼休み][仕事中][仕事終わり] も付ける`;
+■ フォーマットルール
+・1行に1タスク
+・カテゴリは [カテゴリ名] を単独行で書く（以降の行が対象）
+・種別タグは行頭に書く：
+  [今日だけ] または [今日だけ 6/20]
+  [毎日]（以降は時間帯タグ [朝][昼休み][仕事中][仕事終わり] が使える）
+  [毎週 曜日]  例: [毎週 月] [毎週 土]
+  [隔週 曜日 第何週...]  例: [隔週 日 2 4]（第2・第4日曜）
+  [月1 曜日 第何週]  例: [月1 日 1]（第1日曜のみ）
+・曜日は 日/月/火/水/木/金/土 の1文字で指定
+・メモは次の行を2スペースインデントで書く
+
+■ 出力例
+[家事]
+[毎日]
+[朝] ストレッチをする
+[仕事終わり] メールチェック
+[毎週 月] 部屋全体に掃除機
+[毎週 土] シーツ・枕カバー交換
+[隔週 日 2 4] フローリングを拭く
+[月1 日 1] シンク&コンロ掃除
+
+[今日だけ]
+病院の予約電話をする`;
 document.getElementById('aiPromptBox').textContent = AI_PROMPT;
 document.getElementById('trashAiPromptBox').textContent = TRASH_AI_PROMPT;
 
@@ -1012,6 +1052,7 @@ function renderManage(){
   if(v==='cats'){ c.innerHTML=buildManageCats(); bindManageCats(c); return; }
   if(v==='trash'){ c.innerHTML=buildManageTrash(); bindManageTrash(c); return; }
   if(v==='scheduled'){ c.innerHTML=buildManageScheduled(); bindManageScheduled(c); return; }
+  if(v==='data'){ c.innerHTML=buildManageData(); bindManageData(c); return; }
 
   // item types: today/daily/weekly/monthly
   const resetBtn = v!=='today' ? `<button class="text-btn" id="mgReset">チェックをリセット</button>` : '';
@@ -1174,6 +1215,94 @@ function bindManageTrash(c){
 }
 
 /* =====================================================
+   データ管理タブ
+   ===================================================== */
+function buildExportText(){
+  const lines=[];
+  const cats=loadCategories();
+  const catName=id=>cats.find(c=>c.id===id)?.name||'';
+
+  // 今日だけ
+  const todayItems=loadItems('today');
+  if(todayItems.length){
+    lines.push('[今日だけ]');
+    const byCat={};
+    todayItems.forEach(it=>{ (byCat[catName(it.categoryId)]=byCat[catName(it.categoryId)]||[]).push(it); });
+    Object.entries(byCat).forEach(([cn,its])=>{
+      if(cn) lines.push(`[${cn}]`);
+      its.forEach(it=>{ lines.push(it.main); if(it.note) lines.push(`  ${it.note}`); });
+    });
+  }
+
+  // 毎日（時間帯でグループ）
+  const dailyItems=loadItems('daily');
+  if(dailyItems.length){
+    lines.push('[毎日]');
+    const byTime={};
+    dailyItems.forEach(it=>{ (byTime[it.time||'anytime']=byTime[it.time||'anytime']||[]).push(it); });
+    TIME_ORDER.forEach(tk=>{
+      if(!byTime[tk]?.length) return;
+      const tag=timeKeyToTag(tk);
+      if(tag) lines.push(`[${tag}]`);
+      const byCat={};
+      byTime[tk].forEach(it=>{ (byCat[catName(it.categoryId)]=byCat[catName(it.categoryId)]||[]).push(it); });
+      Object.entries(byCat).forEach(([cn,its])=>{
+        if(cn) lines.push(`[${cn}]`);
+        its.forEach(it=>{ lines.push(it.main); if(it.note) lines.push(`  ${it.note}`); });
+      });
+    });
+  }
+
+  // スケジュール（曜日ごとにまとめてタグ）
+  const schedItems=loadItems('scheduled');
+  if(schedItems.length){
+    const byCat={};
+    schedItems.forEach(it=>{ (byCat[catName(it.categoryId)]=byCat[catName(it.categoryId)]||[]).push(it); });
+    Object.entries(byCat).forEach(([cn,its])=>{
+      if(cn) lines.push(`[${cn}]`);
+      its.forEach(it=>{
+        lines.push(`[${schedToTag(it)}] ${it.main}`);
+        if(it.note) lines.push(`  ${it.note}`);
+      });
+    });
+  }
+
+  return lines.join('\n');
+}
+
+function openExportModal(){
+  document.getElementById('exportText').value=buildExportText();
+  document.getElementById('exportOverlay').classList.remove('hidden');
+}
+
+function buildManageData(){
+  return `<div class="data-section">
+    <h4>📤 現状出力</h4>
+    <p class="ai-hint">全タスクをインポート可能なテキスト形式で出力します。AIに渡して編集し、リセット後に貼り戻せます。</p>
+    <button class="add-btn" id="mgExport">出力する</button>
+  </div>
+  <div class="data-section">
+    <h4>🗑️ データリセット</h4>
+    <p class="ai-hint">全タスクデータを削除します。カテゴリは残ります。出力してからリセットすることを推奨します。</p>
+    <button class="data-danger-btn" id="mgReset">全タスクを削除する</button>
+  </div>`;
+}
+
+function resetAllTasks(){
+  if(!confirm('全タスクデータを削除しますか？\nカテゴリは残ります。\n（この操作は元に戻せません）')) return;
+  ['todo_items_today_v3','todo_items_daily_v3','todo_items_weekly_v3','todo_items_monthly_v3','todo_items_scheduled_v4'].forEach(k=>localStorage.removeItem(k));
+  // チェック状態もクリア
+  Object.keys(localStorage).filter(k=>k.startsWith('daily_')||k.startsWith('scheduled_')).forEach(k=>localStorage.removeItem(k));
+  showToast('全タスクを削除しました。管理→貼り付けインポートで再登録できます');
+  render();
+}
+
+function bindManageData(c){
+  c.querySelector('#mgExport')?.addEventListener('click',openExportModal);
+  c.querySelector('#mgReset')?.addEventListener('click',resetAllTasks);
+}
+
+/* =====================================================
    Todo編集モーダル
    ===================================================== */
 let editingId=null, editingFreq='daily', isAddMode=false;
@@ -1296,6 +1425,32 @@ document.getElementById('editDelete').addEventListener('click', deleteItem);
 /* =====================================================
    一括貼り付け（種別タグ対応）
    ===================================================== */
+// スケジュールタグ解析: "毎週 月" → schedInfo / "隔週 日 2 4" → schedInfo
+function parseScheduleTag(inner){
+  const parts=inner.split(/\s+/);
+  const head=parts[0];
+  if(parts.length<2) return null;
+  const dow=DOW_TAGS[parts[1]];
+  if(dow===undefined) return null;
+  if(head==='毎週') return {schedFreq:'weekly',schedDow:dow,schedWeekNums:[]};
+  const wn=parts.slice(2).map(Number).filter(n=>n>=1&&n<=4);
+  if(head==='隔週') return {schedFreq:'biweekly',schedDow:dow,schedWeekNums:wn};
+  if(head==='月1')  return {schedFreq:'monthly', schedDow:dow,schedWeekNums:wn};
+  return null;
+}
+// スケジュールタスク → タグ文字列（エクスポート用）
+function schedToTag(item){
+  const dow=DOW_NAMES[item.schedDow];
+  if(item.schedFreq==='weekly') return `毎週 ${dow}`;
+  const wn=(item.schedWeekNums||[]).join(' ');
+  if(item.schedFreq==='biweekly') return `隔週 ${dow}${wn?' '+wn:''}`;
+  return `月1 ${dow}${wn?' '+wn:''}`;
+}
+// 時間帯キー → タグ文字列（エクスポート用）
+function timeKeyToTag(key){
+  return {morning:'朝',lunch:'昼休み',work:'仕事中',evening:'仕事終わり',anytime:''}[key]||'';
+}
+
 function stripBullet(s){
   return s
     .replace(/^[\s]*[-・*•‐–—]\s*(\[\s*[x ✓]\s*\])?\s*/u,'')
@@ -1304,37 +1459,52 @@ function stripBullet(s){
     .replace(/^[\s]*\d+[.)。）]\s*/u,'')
     .trim();
 }
-// 戻り値: { items:[{text,catHint,freq,date}], sawSection:bool }
+// 戻り値: { items:[{text,note?,catHint,freq,date?,schedInfo?}], sawSection:bool }
 function parseBulkV3(text){
-  let curFreq=null, curCat=null, curDate=null, curTime=null, sawSection=false;
+  let curFreq=null, curCat=null, curDate=null, curTime=null, curSchedInfo=null, sawSection=false;
   const items=[];
   text.split('\n').forEach(raw=>{
+    // 2スペース以上のインデント行 → 直前タスクのメモ
+    if(/^[ \t]{2,}/.test(raw) && items.length){
+      const noteText=raw.trim();
+      if(noteText && !noteText.startsWith('[')){
+        items[items.length-1].note=noteText;
+        return;
+      }
+    }
     let s=stripBullet(raw);
     if(!s) return;
     const cm=s.match(/^\[([^\]]+)\]\s*/);
     if(cm){
       const inner=cm[1].trim();
       const rest=s.slice(cm[0].length).trim();
+      // スケジュールタグ判定（毎週/隔週/月1）
+      const si=parseScheduleTag(inner);
+      if(si){
+        curFreq='scheduled'; curSchedInfo=si; curTime=null; sawSection=true;
+        if(rest){ items.push({text:rest,catHint:curCat,freq:'scheduled',schedInfo:si}); }
+        return;
+      }
       // 種別タグ判定（"今日だけ 6/20" 形式も許容）
       const headWord=inner.split(/\s+/)[0];
       if(SECTION_TAGS[headWord]){
-        curFreq=SECTION_TAGS[headWord]; sawSection=true;
+        curFreq=SECTION_TAGS[headWord]; curSchedInfo=null; sawSection=true;
         curDate=curFreq==='today' ? (parseShortDate(inner)||null) : null;
-        if(rest){ items.push({ text:rest, catHint:curCat, freq:curFreq, date:curDate, time:curTime }); }
+        if(rest){ items.push({text:rest,catHint:curCat,freq:curFreq,date:curDate,time:curTime}); }
         return;
       }
       // 時間帯タグ
       if(TIME_TAGS[inner]){
-        if(!rest){ curTime=TIME_TAGS[inner]; return; } // 単独行 → 以降の時間帯
-        items.push({ text:rest, catHint:curCat, freq:curFreq, date:curDate, time:TIME_TAGS[inner] });
+        if(!rest){ curTime=TIME_TAGS[inner]; return; }
+        items.push({text:rest,catHint:curCat,freq:curFreq,date:curDate,time:TIME_TAGS[inner],schedInfo:curSchedInfo});
         return;
       }
       // カテゴリタグ
-      if(!rest){ curCat=inner; return; }       // 単独行 → 以降のカテゴリ
-      items.push({ text:rest, catHint:inner, freq:curFreq, date:curDate, time:curTime });
+      if(!rest){ curCat=inner; return; }
+      items.push({text:rest,catHint:inner,freq:curFreq,date:curDate,time:curTime,schedInfo:curSchedInfo});
       return;
     }
-    items.push({ text:s, catHint:curCat, freq:curFreq, date:curDate, time:curTime });
+    items.push({text:s,catHint:curCat,freq:curFreq,date:curDate,time:curTime,schedInfo:curSchedInfo});
   });
   return { items, sawSection };
 }
@@ -1380,6 +1550,14 @@ function renderBulkPreview(){
       const pendingOpts=unknownNames.map(name=>`<option value="__pending__${name}"${selId===`__pending__${name}`?' selected':''}>${esc(name)}（新規）</option>`).join('');
       const catOpts=categories.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji||''} ${esc(c.name)}</option>`).join('')
         +pendingOpts+`<option value="__new__" style="color:var(--sage);font-weight:700">＋作成</option>`;
+      // スケジュールアイテムはバッジ表示（freq/timeセレクト不要）
+      if(itemFreq==='scheduled' && item.schedInfo){
+        return `<div class="bulk-preview-item">
+          <span class="bulk-item-text" title="${esc(item.text)}">${esc(item.text)}</span>
+          <span class="bulk-sched-badge">🗓 ${esc(fmtSched(item.schedInfo))}</span>
+          <select class="bulk-item-cat" id="bpi_${i}">${catOpts}</select>
+        </div>`;
+      }
       // 時間帯セレクトは「毎日」のときだけ有効
       return `<div class="bulk-preview-item">
         <span class="bulk-item-text" title="${esc(item.text)}">${esc(item.text)}</span>
@@ -1425,20 +1603,24 @@ function saveBulk(){
 
   const dFreq=defaultFreq();
   const defaultCatId=categories[0]?.id||'';
-  const buckets={ today:[], daily:[], weekly:[], monthly:[] };
+  const buckets={ today:[], daily:[], weekly:[], monthly:[], scheduled:[] };
   const t=getToday();
 
   bulkParsed.forEach((item,i)=>{
     const freq=(document.getElementById(`bpf_${i}`)?.value)||item.freq||dFreq;
     const rawCat=document.getElementById(`bpi_${i}`)?.value||'';
     const catId=pendingMap[rawCat]||(rawCat&&rawCat!=='__new__'&&!rawCat.startsWith('__pending__')?rawCat:defaultCatId);
-    if(freq==='today'){
-      buckets.today.push({ id:genId(), main:item.text, categoryId:catId, targetDate:item.date||t.dateKey, completed:false });
+    if(freq==='scheduled' && item.schedInfo){
+      const si=item.schedInfo;
+      buckets.scheduled.push({ id:genId(), main:item.text, note:item.note||'', categoryId:catId,
+        schedFreq:si.schedFreq, schedDow:si.schedDow, schedWeekNums:si.schedWeekNums||[] });
+    } else if(freq==='today'){
+      buckets.today.push({ id:genId(), main:item.text, note:item.note||'', categoryId:catId, targetDate:item.date||t.dateKey, completed:false });
     } else if(freq==='daily'){
       const time=(document.getElementById(`bpt_${i}`)?.value)||item.time||'anytime';
-      buckets.daily.push({ id:genId(), main:item.text, time, categoryId:catId });
+      buckets.daily.push({ id:genId(), main:item.text, note:item.note||'', time, categoryId:catId });
     } else {
-      buckets[freq].push({ id:genId(), main:item.text, time:'anytime', categoryId:catId });
+      buckets[freq].push({ id:genId(), main:item.text, note:item.note||'', time:'anytime', categoryId:catId });
     }
   });
 
@@ -1446,6 +1628,11 @@ function saveBulk(){
   FREQS.forEach(f=>{
     if(buckets[f].length){ saveItems(f, loadItems(f).concat(buckets[f])); added+=buckets[f].length; }
   });
+  if(buckets.scheduled.length){
+    const existing=JSON.parse(localStorage.getItem('todo_items_scheduled_v4')||'[]');
+    localStorage.setItem('todo_items_scheduled_v4', JSON.stringify(existing.concat(buckets.scheduled)));
+    added+=buckets.scheduled.length;
+  }
   closeBulkModal();
   render();
   showToast(`${added}件追加しました`);
@@ -1469,6 +1656,8 @@ document.getElementById('bulkText').addEventListener('input', renderBulkPreview)
 document.getElementById('bulkCancel').addEventListener('click', closeBulkModal);
 document.getElementById('bulkSave').addEventListener('click', saveBulk);
 document.getElementById('copyPromptBtn').addEventListener('click', ()=>copyText(AI_PROMPT));
+document.getElementById('exportClose').addEventListener('click', ()=>document.getElementById('exportOverlay').classList.add('hidden'));
+document.getElementById('exportCopy').addEventListener('click', ()=>copyText(document.getElementById('exportText').value));
 
 /* =====================================================
    カテゴリ管理モーダル
@@ -1768,8 +1957,6 @@ tutCard.addEventListener('touchend', e=>{
    ===================================================== */
 function initScheduledItems(){
   if(storage.get('todo_items_scheduled_v4')!==null) return;
-  const cats=loadCategories();
-  const fc=name=>cats.find(c=>c.name===name)||cats[0]||{id:''};
   const items=[];
   // 既存の週/月タスクをスケジュール形式へ移行（土曜週次/第1土曜月次として）
   loadItems('weekly').forEach(item=>{
@@ -1777,22 +1964,6 @@ function initScheduledItems(){
   });
   loadItems('monthly').forEach(item=>{
     items.push({...item, schedFreq:'monthly', schedDow:6, schedWeekNums:[1]});
-  });
-  // デフォルトタスク
-  [
-    {main:'部屋全体に掃除機',       cat:'家事',   freq:'weekly',   dow:1, wn:[]},
-    {main:'タオルを変える',          cat:'家事',   freq:'weekly',   dow:2, wn:[]},
-    {main:'ぽんずのトイレ周り念入り掃除', cat:'ぽんず', freq:'weekly', dow:3, wn:[]},
-    {main:'来週の予定を確認',        cat:'生活管理', freq:'weekly',  dow:5, wn:[]},
-    {main:'シーツ・枕カバー交換',    cat:'家事',   freq:'weekly',   dow:6, wn:[]},
-    {main:'お風呂掃除',             cat:'家事',   freq:'weekly',   dow:0, wn:[]},
-    {main:'フローリングを拭く',      cat:'家事',   freq:'biweekly', dow:0, wn:[2,4]},
-    {main:'シンク&コンロ掃除',      cat:'家事',   freq:'monthly',  dow:0, wn:[1]},
-    {main:'ぽんずの爪・肉球確認',    cat:'ぽんず', freq:'monthly',  dow:0, wn:[2]},
-    {main:'冷蔵庫の古い食材処分',    cat:'家事',   freq:'monthly',  dow:0, wn:[3]},
-  ].forEach(d=>{
-    items.push({id:genId(), main:d.main, categoryId:fc(d.cat).id,
-      schedFreq:d.freq, schedDow:d.dow, schedWeekNums:d.wn});
   });
   saveItems('scheduled', items);
 }
