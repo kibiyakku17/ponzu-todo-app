@@ -289,6 +289,13 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
 .color-swatch{ width:30px; height:30px; border-radius:999px; cursor:pointer; border:3px solid transparent; transition:transform .1s, border-color .1s; }
 .color-swatch.selected{ border-color:var(--ink); transform:scale(1.15); }
 
+.sched-row{ display:flex; gap:8px; }
+.sched-row select{ flex:1; }
+.sched-week-row{ display:flex; align-items:center; gap:10px; padding:6px 0; flex-wrap:wrap; }
+.sched-week-row > span{ font-size:13px; color:var(--muted); font-weight:700; }
+.sched-week-row label{ display:flex; align-items:center; gap:4px; font-size:14px; cursor:pointer; }
+.sched-week-row input[type=checkbox]{ width:16px; height:16px; accent-color:var(--sage); cursor:pointer; }
+
 @media (max-width:380px){
   .app{ padding-inline:12px; }
   h1{ font-size:21px; }
@@ -342,12 +349,11 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
       <h1>Todoの管理</h1>
     </header>
     <div class="manage-tabs" id="manageTabs" role="tablist">
-      <button class="mtab" role="tab" data-mview="today"   aria-selected="true">📌 今日だけ</button>
-      <button class="mtab" role="tab" data-mview="daily"   aria-selected="false">🔁 毎日</button>
-      <button class="mtab" role="tab" data-mview="weekly"  aria-selected="false">🎀 週</button>
-      <button class="mtab" role="tab" data-mview="monthly" aria-selected="false">🌙 月</button>
-      <button class="mtab" role="tab" data-mview="cats"    aria-selected="false">🏷️ カテゴリ</button>
-      <button class="mtab" role="tab" data-mview="trash"   aria-selected="false">🗑️ ごみ出し</button>
+      <button class="mtab" role="tab" data-mview="today"     aria-selected="true">📌 今日だけ</button>
+      <button class="mtab" role="tab" data-mview="daily"     aria-selected="false">🔁 毎日</button>
+      <button class="mtab" role="tab" data-mview="scheduled" aria-selected="false">🗓 スケジュール</button>
+      <button class="mtab" role="tab" data-mview="cats"      aria-selected="false">🏷️ カテゴリ</button>
+      <button class="mtab" role="tab" data-mview="trash"     aria-selected="false">🗑️ ごみ出し</button>
     </div>
     <main id="manageContent"></main>
     <footer class="footer">ここで作ったタスクが、ホームの今日のリストに表示されます。</footer>
@@ -386,6 +392,33 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
     <div class="modal-field hidden" id="editDateField">
       <label for="editDate">対象日</label>
       <input type="date" id="editDate">
+    </div>
+    <div class="modal-field hidden" id="editSchedField">
+      <label>スケジュール</label>
+      <div class="sched-row">
+        <select id="editSchedFreq">
+          <option value="weekly">毎週</option>
+          <option value="biweekly">隔週（第2・第4）</option>
+          <option value="monthly">月1回</option>
+        </select>
+        <select id="editSchedDow">
+          <option value="0">日曜</option>
+          <option value="1">月曜</option>
+          <option value="2">火曜</option>
+          <option value="3">水曜</option>
+          <option value="4">木曜</option>
+          <option value="5">金曜</option>
+          <option value="6">土曜</option>
+        </select>
+      </div>
+      <div id="editSchedWeekRow" class="sched-week-row hidden">
+        <span>第</span>
+        <label><input type="checkbox" class="sched-week-chk" value="1">1</label>
+        <label><input type="checkbox" class="sched-week-chk" value="2">2</label>
+        <label><input type="checkbox" class="sched-week-chk" value="3">3</label>
+        <label><input type="checkbox" class="sched-week-chk" value="4">4</label>
+        <span>週</span>
+      </div>
     </div>
     <div class="modal-field">
       <label for="editCategory">カテゴリ</label>
@@ -607,8 +640,14 @@ function getCat(id){ return categories.find(c=>c.id===id); }
    Todo項目管理（today / daily / weekly / monthly）
    ===================================================== */
 const FREQS = ['today','daily','weekly','monthly'];
-function loadItems(freq){ return storage.get(`todo_items_${freq}_v3`) || []; }
-function saveItems(freq, items){ storage.set(`todo_items_${freq}_v3`, items); }
+function loadItems(freq){
+  if(freq==='scheduled') return storage.get('todo_items_scheduled_v4')||[];
+  return storage.get(`todo_items_${freq}_v3`)||[];
+}
+function saveItems(freq, items){
+  if(freq==='scheduled'){ storage.set('todo_items_scheduled_v4',items); return; }
+  storage.set(`todo_items_${freq}_v3`, items);
+}
 
 /* =====================================================
    ごみ出し設定
@@ -644,6 +683,24 @@ function stateKey(view){
 }
 function isSaturday(){ return getToday().dow===6; }
 function isFirstSaturday(){ const t=getToday(); return t.dow===6&&t.d<=7; }
+// スケジュールタスク用ユーティリティ
+function schedStateKey(dateKey){ return `scheduled_${dateKey}`; }
+function nthWeekdayOfMonth(y,m,dow,n){
+  const first=new Date(y,m-1,1);
+  return 1+((dow-first.getDay()+7)%7)+(n-1)*7;
+}
+function isScheduledToday(item,today){
+  if(item.schedDow!==today.dow) return false;
+  if(item.schedFreq==='weekly') return true;
+  return (item.schedWeekNums||[]).some(n=>today.d===nthWeekdayOfMonth(today.y,today.m,item.schedDow,n));
+}
+function fmtSched(item){
+  const dow=DOW_NAMES[item.schedDow]+'曜';
+  if(item.schedFreq==='weekly') return `毎週${dow}`;
+  const weeks=(item.schedWeekNums||[]).map(n=>`第${n}`).join('・');
+  if(item.schedFreq==='biweekly') return `隔週 ${weeks}${dow}`;
+  return `月1 ${weeks}${dow}`;
+}
 // "6/20" → "YYYY-MM-DD"（今年）
 function parseShortDate(s){
   const m=s.match(/(\d{1,2})[\/\-](\d{1,2})/);
@@ -694,7 +751,7 @@ function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
    ===================================================== */
 const appState = {
   page:'home', manageView:'today',
-  hideDone:{ daily:false, weekly:false, monthly:false },
+  hideDone:{ daily:false, weekly:false, monthly:false, scheduled:false },
   todayKey:'', installPrompt:null,
 };
 
@@ -704,7 +761,8 @@ const appState = {
 function updateDateHeader(){
   const t=getToday(); appState.todayKey=t.dateKey;
   document.getElementById('dateDisplay').textContent=`${t.m}月${t.d}日（${DOW_NAMES[t.dow]}）`;
-  const sub = isSaturday() ? '今日は週のタスクも表示されます。'+(isFirstSaturday()?' 月のタスクも！':'') : '毎日のことを、少しずつ。';
+  const schedCount=loadItems('scheduled').filter(i=>isScheduledToday(i,t)).length;
+  const sub = schedCount ? `今日は${schedCount}件のスケジュールタスクがあります。` : '毎日のことを、少しずつ。';
   document.getElementById('subtitle').textContent=sub;
 }
 function renderTrash(){
@@ -814,6 +872,44 @@ function buildCatHome(items, state, freq, hide){
   }).join('');
 }
 
+function buildScheduledHome(items, state, hide){
+  const sk=schedStateKey(getToday().dateKey);
+  // カテゴリごとにグループ化（カテゴリなし/孤立アイテムも表示）
+  const bycat={};
+  items.forEach(item=>{ (bycat[item.categoryId]=bycat[item.categoryId]||[]).push(item); });
+  const catList=[...categories];
+  // どのカテゴリにも属さないアイテムを「カテゴリなし」として追加
+  const orphaned=items.filter(i=>!categories.find(c=>c.id===i.categoryId));
+  let html='';
+  // カテゴリ別
+  catList.forEach(cat=>{
+    let its=bycat[cat.id]||[];
+    if(hide) its=its.filter(i=>!state[i.id]);
+    if(!its.length) return;
+    const total=(bycat[cat.id]||[]).length, done=(bycat[cat.id]||[]).filter(i=>state[i.id]).length;
+    let rows='';
+    its.forEach(item=>{
+      rows+=taskRow(item, cat.color, !!state[item.id], `id="sc_${item.id}" data-id="${item.id}" data-state-key="${sk}"`);
+    });
+    html+=`<section class="section" style="--accent:${cat.color}">
+      <div class="section-head"><h2>${cat.emoji||''} ${esc(cat.name)}</h2><span class="count">${done}/${total}</span></div>
+      ${rows}
+    </section>`;
+  });
+  // カテゴリ未設定のアイテム
+  if(orphaned.length){
+    let its=hide ? orphaned.filter(i=>!state[i.id]) : orphaned;
+    if(its.length){
+      let rows='';
+      its.forEach(item=>{
+        rows+=taskRow(item, '#888B7E', !!state[item.id], `id="sc_${item.id}" data-id="${item.id}" data-state-key="${sk}"`);
+      });
+      html+=rows;
+    }
+  }
+  return html;
+}
+
 function renderHome(){
   updateDateHeader();
   renderTrash();
@@ -836,27 +932,16 @@ function renderHome(){
     html+=groupLabel('🔁 毎日','daily')+(body||`<div class="empty">毎日のタスクは全部完了！おつかれさま🐾</div>`);
   }
 
-  // 🎀 今週（土曜のみ）
-  if(isSaturday()){
-    const wItems=loadItems('weekly');
-    if(wItems.length){
-      const wState=storage.getObj(stateKey('weekly'));
-      const body=buildCatHome(wItems, wState, 'weekly', appState.hideDone.weekly);
-      html+=groupLabel('🎀 今週のタスク','weekly')+(body||`<div class="empty">今週のタスクは完了！</div>`);
-    }
-  }
-  // 🌙 今月（月初の土曜のみ）
-  if(isFirstSaturday()){
-    const mItems=loadItems('monthly');
-    if(mItems.length){
-      const mState=storage.getObj(stateKey('monthly'));
-      const body=buildCatHome(mItems, mState, 'monthly', appState.hideDone.monthly);
-      html+=groupLabel('🌙 今月のタスク','monthly')+(body||`<div class="empty">今月のタスクは完了！</div>`);
-    }
+  // 🗓 スケジュール（今日の曜日・週に該当するタスク）
+  const schedItems=loadItems('scheduled').filter(i=>isScheduledToday(i,t));
+  if(schedItems.length){
+    const sState=storage.getObj(schedStateKey(t.dateKey));
+    const body=buildScheduledHome(schedItems, sState, appState.hideDone.scheduled);
+    html+=groupLabel('🗓 スケジュール','scheduled')+(body||`<div class="empty">今日のスケジュールタスクは完了！</div>`);
   }
 
   if(!html){
-    const totalTodos=FREQS.reduce((s,f)=>s+loadItems(f).length,0);
+    const totalTodos=FREQS.reduce((s,f)=>s+loadItems(f).length,0)+loadItems('scheduled').length;
     if(totalTodos===0){
       // 初回・全削除直後・Todo0件 → ウェルカムカード
       html=`<div class="welcome">
@@ -926,6 +1011,7 @@ function renderManage(){
   const v=appState.manageView;
   if(v==='cats'){ c.innerHTML=buildManageCats(); bindManageCats(c); return; }
   if(v==='trash'){ c.innerHTML=buildManageTrash(); bindManageTrash(c); return; }
+  if(v==='scheduled'){ c.innerHTML=buildManageScheduled(); bindManageScheduled(c); return; }
 
   // item types: today/daily/weekly/monthly
   const resetBtn = v!=='today' ? `<button class="text-btn" id="mgReset">チェックをリセット</button>` : '';
@@ -993,6 +1079,51 @@ function bindManageItems(c){
   c.querySelectorAll('.edit-btn[data-cat-id]').forEach(b=>b.addEventListener('click',()=>openEditCatModal(b.dataset.catId)));
 }
 
+function buildManageScheduled(){
+  const items=loadItems('scheduled');
+  let html=`<div class="manage-actions">
+    <button class="add-btn" id="mgAdd">＋ 個別追加</button>
+  </div>`;
+  if(!items.length){
+    html+=`<div class="empty">スケジュールタスクがありません。<br>＋から追加しましょう🗓</div>`;
+    return html;
+  }
+  const bycat={};
+  items.forEach(item=>{ (bycat[item.categoryId]=bycat[item.categoryId]||[]).push(item); });
+  const taskHtml=(item,color)=>`<div class="task" style="--accent:${color};grid-template-columns:1fr auto">
+    <label class="txt">
+      <span class="main">${esc(item.main)}</span>
+      ${item.note?`<span class="note">${esc(item.note)}</span>`:''}
+      <span class="note">${fmtSched(item)}</span>
+    </label>
+    <button class="edit-btn" data-edit-id="${item.id}" data-edit-freq="scheduled" title="編集">✏️</button>
+  </div>`;
+  html+=categories.map(cat=>{
+    const its=bycat[cat.id]||[];
+    if(!its.length) return '';
+    return `<section class="section" style="--accent:${cat.color}">
+      <div class="section-head"><h2>${cat.emoji||''} ${esc(cat.name)}</h2>
+        <button class="edit-btn" data-cat-id="${cat.id}" title="カテゴリ編集">⚙️</button></div>
+      ${its.map(i=>taskHtml(i,cat.color)).join('')}
+    </section>`;
+  }).join('');
+  // カテゴリ未設定のアイテムも表示
+  const orphaned=items.filter(i=>!categories.find(c=>c.id===i.categoryId));
+  if(orphaned.length){
+    html+=`<section class="section" style="--accent:#888B7E">
+      <div class="section-head"><h2>📋 カテゴリなし</h2></div>
+      ${orphaned.map(i=>taskHtml(i,'#888B7E')).join('')}
+    </section>`;
+  }
+  return html;
+}
+function bindManageScheduled(c){
+  const add=document.getElementById('mgAdd');
+  if(add) add.addEventListener('click',()=>openAddModal('scheduled'));
+  c.querySelectorAll('.edit-btn[data-edit-id]').forEach(b=>b.addEventListener('click',()=>openEditModal(b.dataset.editId,'scheduled')));
+  c.querySelectorAll('.edit-btn[data-cat-id]').forEach(b=>b.addEventListener('click',()=>openEditCatModal(b.dataset.catId)));
+}
+
 function buildManageCats(){
   let html=`<div class="manage-actions cat-add-row"><button class="add-btn" id="mgAddCat2">＋ カテゴリを追加</button></div>`;
   if(!categories.length){
@@ -1000,7 +1131,8 @@ function buildManageCats(){
     return html;
   }
   html+=categories.map(cat=>{
-    const count=FREQS.reduce((s,f)=>s+loadItems(f).filter(i=>i.categoryId===cat.id).length,0);
+    const count=FREQS.reduce((s,f)=>s+loadItems(f).filter(i=>i.categoryId===cat.id).length,0)
+      +loadItems('scheduled').filter(i=>i.categoryId===cat.id).length;
     return `<section class="section" style="--accent:${cat.color}">
       <div class="section-head">
         <h2>${cat.emoji||''} ${esc(cat.name)}</h2>
@@ -1051,19 +1183,28 @@ function populateCategorySelect(selectEl, selectedId){
     `<option value="${c.id}" ${c.id===selectedId?'selected':''}>${c.emoji||''} ${esc(c.name)}</option>`
   ).join('')+`<option value="__new__" style="color:var(--sage);font-weight:700">＋ 新しいカテゴリを作る</option>`;
 }
+function updateSchedWeekRow(){
+  const f=document.getElementById('editSchedFreq').value;
+  document.getElementById('editSchedWeekRow').classList.toggle('hidden', f==='weekly');
+}
 function toggleEditFields(freq){
   document.getElementById('editTimeField').classList.toggle('hidden', freq!=='daily');
   document.getElementById('editDateField').classList.toggle('hidden', freq!=='today');
+  document.getElementById('editSchedField').classList.toggle('hidden', freq!=='scheduled');
+  if(freq==='scheduled') updateSchedWeekRow();
 }
 
 function openAddModal(freq){
   if(freq==='cats'||freq==='trash') freq='daily';
   isAddMode=true; editingId=null; editingFreq=freq;
-  document.getElementById('editTitle').textContent=`＋ ${FREQ_META[freq].label}に追加`;
+  document.getElementById('editTitle').textContent=freq==='scheduled'?'＋ スケジュールに追加':`＋ ${FREQ_META[freq].label}に追加`;
   document.getElementById('editMain').value='';
   document.getElementById('editNote').value='';
   document.getElementById('editTime').value='anytime';
   document.getElementById('editDate').value=getToday().dateKey;
+  document.getElementById('editSchedFreq').value='weekly';
+  document.getElementById('editSchedDow').value=String(getToday().dow);
+  document.querySelectorAll('.sched-week-chk').forEach(c=>{ c.checked=false; });
   toggleEditFields(freq);
   populateCategorySelect(document.getElementById('editCategory'), categories[0]?.id);
   document.getElementById('editDelete').classList.add('hidden');
@@ -1075,7 +1216,8 @@ function openEditModal(id, freqHint){
   let found=null, foundFreq=freqHint||'daily';
   if(freqHint){ found=loadItems(freqHint).find(i=>i.id===id); }
   if(!found){
-    for(const freq of FREQS){ const item=loadItems(freq).find(i=>i.id===id); if(item){ found=item; foundFreq=freq; break; } }
+    const allFreqs=[...FREQS,'scheduled'];
+    for(const freq of allFreqs){ const item=loadItems(freq).find(i=>i.id===id); if(item){ found=item; foundFreq=freq; break; } }
   }
   if(!found) return;
   isAddMode=false; editingId=id; editingFreq=foundFreq;
@@ -1084,6 +1226,11 @@ function openEditModal(id, freqHint){
   document.getElementById('editNote').value=found.note||'';
   document.getElementById('editTime').value=found.time||'anytime';
   document.getElementById('editDate').value=found.targetDate||getToday().dateKey;
+  if(foundFreq==='scheduled'){
+    document.getElementById('editSchedFreq').value=found.schedFreq||'weekly';
+    document.getElementById('editSchedDow').value=String(found.schedDow??0);
+    document.querySelectorAll('.sched-week-chk').forEach(c=>{ c.checked=(found.schedWeekNums||[]).includes(+c.value); });
+  }
   toggleEditFields(foundFreq);
   populateCategorySelect(document.getElementById('editCategory'), found.categoryId);
   document.getElementById('editDelete').classList.remove('hidden');
@@ -1105,6 +1252,12 @@ function saveEdit(){
     const base={ id:genId(), main:newMain, note:newNote||undefined, categoryId:newCatId };
     if(editingFreq==='today'){ base.targetDate=document.getElementById('editDate').value||getToday().dateKey; base.completed=false; }
     else if(editingFreq==='daily'){ base.time=document.getElementById('editTime').value; }
+    else if(editingFreq==='scheduled'){
+      base.schedFreq=document.getElementById('editSchedFreq').value;
+      base.schedDow=+document.getElementById('editSchedDow').value;
+      base.schedWeekNums=base.schedFreq==='weekly'?[]:
+        [...document.querySelectorAll('.sched-week-chk:checked')].map(c=>+c.value);
+    }
     else { base.time='anytime'; }
     items.push(base);
   } else {
@@ -1113,6 +1266,12 @@ function saveEdit(){
     const it={ ...items[idx], main:newMain, note:newNote||undefined, categoryId:newCatId };
     if(editingFreq==='today'){ it.targetDate=document.getElementById('editDate').value||getToday().dateKey; }
     else if(editingFreq==='daily'){ it.time=document.getElementById('editTime').value; }
+    else if(editingFreq==='scheduled'){
+      it.schedFreq=document.getElementById('editSchedFreq').value;
+      it.schedDow=+document.getElementById('editSchedDow').value;
+      it.schedWeekNums=it.schedFreq==='weekly'?[]:
+        [...document.querySelectorAll('.sched-week-chk:checked')].map(c=>+c.value);
+    }
     items[idx]=it;
   }
   saveItems(editingFreq, items);
@@ -1128,6 +1287,7 @@ function deleteItem(){
 }
 
 document.getElementById('editCategory').addEventListener('change', e=>{ if(e.target.value==='__new__') openAddCatModalFromSelect('editCategory'); });
+document.getElementById('editSchedFreq').addEventListener('change', updateSchedWeekRow);
 document.getElementById('editCancel').addEventListener('click', closeEditModal);
 document.getElementById('editSave').addEventListener('click', saveEdit);
 document.getElementById('editDelete').addEventListener('click', deleteItem);
@@ -1183,7 +1343,7 @@ function findMatchedCat(hint){
   return categories.find(c=>c.name===hint||c.name.includes(hint)||hint.includes(c.name))||null;
 }
 function defaultFreq(){
-  return FREQS.includes(appState.manageView) ? appState.manageView : 'daily';
+  return [...FREQS,'scheduled'].includes(appState.manageView) ? appState.manageView : 'daily';
 }
 
 let bulkParsed=[];
@@ -1525,6 +1685,13 @@ function showToast(msg){
    ===================================================== */
 function resetCurrentView(){
   const v=appState.manageView;
+  if(v==='scheduled'){
+    if(!confirm('今日のスケジュールのチェックをリセットしますか？')) return;
+    localStorage.removeItem(schedStateKey(getToday().dateKey));
+    showToast('チェックをリセットしました');
+    render();
+    return;
+  }
   if(!FREQS.includes(v)||v==='today') return;
   const label=v==='daily'?'今日':v==='weekly'?'今週':'今月';
   if(!confirm(`${label}のチェックをリセットしますか？`)) return;
@@ -1597,11 +1764,46 @@ tutCard.addEventListener('touchend', e=>{
 });
 
 /* =====================================================
+   スケジュールタスク初期化
+   ===================================================== */
+function initScheduledItems(){
+  if(storage.get('todo_items_scheduled_v4')!==null) return;
+  const cats=loadCategories();
+  const fc=name=>cats.find(c=>c.name===name)||cats[0]||{id:''};
+  const items=[];
+  // 既存の週/月タスクをスケジュール形式へ移行（土曜週次/第1土曜月次として）
+  loadItems('weekly').forEach(item=>{
+    items.push({...item, schedFreq:'weekly', schedDow:6, schedWeekNums:[]});
+  });
+  loadItems('monthly').forEach(item=>{
+    items.push({...item, schedFreq:'monthly', schedDow:6, schedWeekNums:[1]});
+  });
+  // デフォルトタスク
+  [
+    {main:'部屋全体に掃除機',       cat:'家事',   freq:'weekly',   dow:1, wn:[]},
+    {main:'タオルを変える',          cat:'家事',   freq:'weekly',   dow:2, wn:[]},
+    {main:'ぽんずのトイレ周り念入り掃除', cat:'ぽんず', freq:'weekly', dow:3, wn:[]},
+    {main:'来週の予定を確認',        cat:'生活管理', freq:'weekly',  dow:5, wn:[]},
+    {main:'シーツ・枕カバー交換',    cat:'家事',   freq:'weekly',   dow:6, wn:[]},
+    {main:'お風呂掃除',             cat:'家事',   freq:'weekly',   dow:0, wn:[]},
+    {main:'フローリングを拭く',      cat:'家事',   freq:'biweekly', dow:0, wn:[2,4]},
+    {main:'シンク&コンロ掃除',      cat:'家事',   freq:'monthly',  dow:0, wn:[1]},
+    {main:'ぽんずの爪・肉球確認',    cat:'ぽんず', freq:'monthly',  dow:0, wn:[2]},
+    {main:'冷蔵庫の古い食材処分',    cat:'家事',   freq:'monthly',  dow:0, wn:[3]},
+  ].forEach(d=>{
+    items.push({id:genId(), main:d.main, categoryId:fc(d.cat).id,
+      schedFreq:d.freq, schedDow:d.dow, schedWeekNums:d.wn});
+  });
+  saveItems('scheduled', items);
+}
+
+/* =====================================================
    起動
    ===================================================== */
 setupInstallPrompt();
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 setInterval(()=>{ if(getToday().dateKey!==appState.todayKey) render(); },60000);
+initScheduledItems();
 render();
 if(!localStorage.getItem('todo_tutorial_seen_v3')) openTut();
 </script>
