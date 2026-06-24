@@ -877,7 +877,7 @@ function buildTodayHome(items){
 
 function buildDailyHome(items, state, hide){
   const buckets={}; TIME_ORDER.forEach(t=>buckets[t]=[]);
-  items.forEach(item=>{ buckets[item.time||'anytime'].push(item); });
+  items.forEach(item=>{ const t=buckets[item.time]?item.time:'anytime'; buckets[t].push(item); });
   let html='';
   TIME_ORDER.forEach(time=>{
     let its=buckets[time];
@@ -1969,8 +1969,21 @@ function initScheduledItems(){
 }
 
 /* =====================================================
+   旧データ移行：廃止した時間帯（仕事中=work など）を時間未設定へ
+   ===================================================== */
+function migrateDailyTimes(){
+  const items=loadItems('daily');
+  let changed=false;
+  items.forEach(it=>{
+    if(it.time && !TIME_ORDER.includes(it.time)){ it.time='anytime'; changed=true; }
+  });
+  if(changed) saveItems('daily', items);
+}
+
+/* =====================================================
    起動
    ===================================================== */
+migrateDailyTimes();
 setupInstallPrompt();
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 setInterval(()=>{ if(getToday().dateKey!==appState.todayKey) render(); },60000);
