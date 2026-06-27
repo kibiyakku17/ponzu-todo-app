@@ -306,6 +306,15 @@ h1{ margin:0; font-size:24px; font-family:'Zen Maru Gothic',sans-serif; font-wei
   h1{ font-size:21px; }
   .meter{ width:84px; min-width:84px; }
 }
+
+/* ── 後回し（スヌーズ）── */
+.defer-btn{ align-self:center; background:none; border:none; cursor:pointer; color:var(--muted); font-size:13px; padding:4px 2px; border-radius:6px; line-height:1; white-space:nowrap; }
+.defer-btn:hover{ color:var(--sage); }
+.defer-picker-row{ grid-column:1/-1; display:flex; gap:6px; align-items:center; padding:4px 0; flex-wrap:wrap; }
+.defer-picker-row input[type=date]{ flex:1; min-width:120px; border:1px solid var(--sage); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--soft); color:var(--ink); outline:none; }
+.defer-confirm-btn{ background:var(--sage); color:#fff; border:none; border-radius:8px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer; }
+.defer-cancel-btn{ background:var(--soft); color:var(--muted); border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:13px; cursor:pointer; }
+.deferred-badge{ display:inline-block; background:var(--amber-soft); color:var(--amber); border:1px solid var(--amber); border-radius:6px; padding:1px 7px; font-size:11px; font-weight:700; vertical-align:middle; margin-right:3px; }
 </style>
 </head>
 <body>
@@ -690,6 +699,26 @@ function saveItems(freq, items){
 }
 
 /* =====================================================
+   後回しタスク管理
+   ===================================================== */
+function loadDeferredTasks(){ return storage.get('deferred_tasks')||[]; }
+function saveDeferredTasks(items){ storage.set('deferred_tasks', items); }
+
+function deferTask(itemId, targetDate, todayKey){
+  const sk=schedStateKey(todayKey);
+  const state=storage.getObj(sk);
+  state[itemId]='skipped';
+  storage.set(sk, state);
+  const origItem=loadItems('scheduled').find(i=>i.id===itemId);
+  if(!origItem) return;
+  const deferred=loadDeferredTasks();
+  deferred.push({ id:genId(), sourceId:itemId, main:origItem.main, note:origItem.note||'', categoryId:origItem.categoryId, targetDate, doneDate:null });
+  saveDeferredTasks(deferred);
+  showToast(`${fmtMD(targetDate)}に後回しにしました`);
+  renderHome();
+}
+
+/* =====================================================
    ごみ出し設定
    ===================================================== */
 function loadTrashSchedule(){ return storage.get('trash_schedule_v3') || DEFAULT_TRASH; }
@@ -850,7 +879,7 @@ function groupLabel(text, secKey){
   return `<div class="group-label"><span>${text}</span><i class="gl-line"></i>${btn}</div>`;
 }
 
-function taskRow(item, accent, checked, attrs, extraNote){
+function taskRow(item, accent, checked, attrs, extraNote, actions=''){
   const cat=getCat(item.categoryId);
   const catLabel=cat?`${cat.emoji||''} ${esc(cat.name)}`:'';
   return `<div class="task" style="--accent:${accent}">
@@ -862,6 +891,7 @@ function taskRow(item, accent, checked, attrs, extraNote){
       ${extraNote?extraNote:''}
       ${catLabel?`<span class="note" style="color:${accent}">${catLabel}</span>`:''}
     </label>
+    ${actions}
   </div>`;
 }
 
@@ -914,40 +944,60 @@ function buildCatHome(items, state, freq, hide){
 
 function buildScheduledHome(items, state, hide){
   const sk=schedStateKey(getToday().dateKey);
-  // カテゴリごとにグループ化（カテゴリなし/孤立アイテムも表示）
+  const todayKey=getToday().dateKey;
   const bycat={};
   items.forEach(item=>{ (bycat[item.categoryId]=bycat[item.categoryId]||[]).push(item); });
   const catList=[...categories];
-  // どのカテゴリにも属さないアイテムを「カテゴリなし」として追加
   const orphaned=items.filter(i=>!categories.find(c=>c.id===i.categoryId));
   let html='';
-  // カテゴリ別
   catList.forEach(cat=>{
-    let its=bycat[cat.id]||[];
+    let its=(bycat[cat.id]||[]).filter(i=>state[i.id]!=='skipped');
     if(hide) its=its.filter(i=>!state[i.id]);
     if(!its.length) return;
-    const total=(bycat[cat.id]||[]).length, done=(bycat[cat.id]||[]).filter(i=>state[i.id]).length;
+    const total=(bycat[cat.id]||[]).filter(i=>state[i.id]!=='skipped').length;
+    const done=(bycat[cat.id]||[]).filter(i=>state[i.id]===true).length;
     let rows='';
     its.forEach(item=>{
-      rows+=taskRow(item, cat.color, !!state[item.id], `id="sc_${item.id}" data-id="${item.id}" data-state-key="${sk}"`);
+      const deferBtn=`<button class="defer-btn" data-defer-id="${item.id}" data-defer-date-key="${todayKey}" title="後回し">⏩</button>`;
+      rows+=taskRow(item, cat.color, !!state[item.id], `id="sc_${item.id}" data-id="${item.id}" data-state-key="${sk}"`, null, deferBtn);
     });
     html+=`<section class="section" style="--accent:${cat.color}">
       <div class="section-head"><h2>${cat.emoji||''} ${esc(cat.name)}</h2><span class="count">${done}/${total}</span></div>
       ${rows}
     </section>`;
   });
-  // カテゴリ未設定のアイテム
   if(orphaned.length){
-    let its=hide ? orphaned.filter(i=>!state[i.id]) : orphaned;
+    let its=orphaned.filter(i=>state[i.id]!=='skipped');
+    if(hide) its=its.filter(i=>!state[i.id]);
     if(its.length){
       let rows='';
       its.forEach(item=>{
-        rows+=taskRow(item, '#888B7E', !!state[item.id], `id="sc_${item.id}" data-id="${item.id}" data-state-key="${sk}"`);
+        const deferBtn=`<button class="defer-btn" data-defer-id="${item.id}" data-defer-date-key="${todayKey}" title="後回し">⏩</button>`;
+        rows+=taskRow(item, '#888B7E', !!state[item.id], `id="sc_${item.id}" data-id="${item.id}" data-state-key="${sk}"`, null, deferBtn);
       });
       html+=rows;
     }
   }
   return html;
+}
+
+function buildDeferredHome(items){
+  let rows='';
+  items.forEach(item=>{
+    const cat=getCat(item.categoryId);
+    const accent=cat?cat.color:'#888B7E';
+    const catLabel=cat?`${cat.emoji||''} ${esc(cat.name)}`:'';
+    rows+=`<div class="task" style="--accent:${accent}">
+      <input type="checkbox" id="df_${item.id}" data-deferred-id="${item.id}">
+      <label class="box" for="df_${item.id}" aria-hidden="true"></label>
+      <label class="txt" for="df_${item.id}">
+        <span class="main"><span class="deferred-badge">🔄後回し</span>${esc(item.main)}</span>
+        ${item.note?`<span class="note">${esc(item.note)}</span>`:''}
+        ${catLabel?`<span class="note" style="color:${accent}">${catLabel}</span>`:''}
+      </label>
+    </div>`;
+  });
+  return rows;
 }
 
 function renderHome(){
@@ -978,6 +1028,12 @@ function renderHome(){
     const sState=storage.getObj(schedStateKey(t.dateKey));
     const body=buildScheduledHome(schedItems, sState, appState.hideDone.scheduled);
     html+=groupLabel('🗓 スケジュール','scheduled')+(body||`<div class="empty">今日のスケジュールタスクは完了！</div>`);
+  }
+
+  // 🔄 後回し中（今日が targetDate かつ未完了）
+  const deferredToday=loadDeferredTasks().filter(d=>d.targetDate===t.dateKey&&!d.doneDate);
+  if(deferredToday.length){
+    html+=groupLabel('🔄 後回し中')+buildDeferredHome(deferredToday);
   }
 
   if(!html){
@@ -1032,6 +1088,43 @@ function renderHome(){
   // section hide toggle
   c.querySelectorAll('.sec-hide').forEach(btn=>{
     btn.addEventListener('click',()=>{ appState.hideDone[btn.dataset.sec]=!appState.hideDone[btn.dataset.sec]; renderHome(); });
+  });
+  // 後回しボタン
+  c.querySelectorAll('.defer-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const itemId=btn.dataset.deferId;
+      const todayKey=btn.dataset.deferDateKey;
+      const taskDiv=btn.closest('.task');
+      taskDiv.querySelector('.defer-picker-row')?.remove();
+      const tom=new Date(getToday().date);
+      tom.setDate(tom.getDate()+1);
+      const tomKey=`${tom.getFullYear()}-${pad(tom.getMonth()+1)}-${pad(tom.getDate())}`;
+      const pr=document.createElement('div');
+      pr.className='defer-picker-row';
+      pr.innerHTML=`<input type="date" value="${tomKey}" min="${tomKey}"><button class="defer-confirm-btn">OK</button><button class="defer-cancel-btn">×</button>`;
+      taskDiv.appendChild(pr);
+      pr.querySelector('input[type=date]').focus();
+      pr.querySelector('.defer-confirm-btn').addEventListener('click',()=>{
+        const d=pr.querySelector('input[type=date]').value;
+        if(!d) return;
+        deferTask(itemId,d,todayKey);
+      });
+      pr.querySelector('.defer-cancel-btn').addEventListener('click',()=>pr.remove());
+      pr.querySelector('input[type=date]').addEventListener('keydown',e=>{
+        if(e.key==='Enter') pr.querySelector('.defer-confirm-btn').click();
+        if(e.key==='Escape') pr.remove();
+      });
+    });
+  });
+  // 後回しタスクのチェックボックス
+  c.querySelectorAll('input[data-deferred-id]').forEach(input=>{
+    input.addEventListener('change',()=>{
+      if(!input.checked) return;
+      const deferred=loadDeferredTasks();
+      const it=deferred.find(d=>d.id===input.dataset.deferredId);
+      if(it){ it.doneDate=getToday().dateKey; saveDeferredTasks(deferred); }
+      renderHome();
+    });
   });
   const gm=document.getElementById('goManageBtn');
   if(gm) gm.addEventListener('click',()=>setPage('manage'));
